@@ -42,7 +42,7 @@ class KoishiFileManager(object):
         elif cmd == "save":
             if len(sub_cmd_list) == 2:
                 await self.save_file(sub_cmd_list[1].lower(), message)
-            if len(sub_cmd_list) == 3:
+            elif len(sub_cmd_list) == 3:
                 await self.save_url(sub_cmd_list[1].lower(), sub_cmd_list[2], message)
 
         elif cmd == "delete":
@@ -74,11 +74,25 @@ class KoishiFileManager(object):
 
         return 0
 
+    async def is_name_valid(self, name, channel=None, send_error=False):
+        if not channel and not send_error:
+            raise Exception
+
+        if name in self.keywords:
+            if send_error:
+                await channel.send("Failed to Save: Do not use the keywords.")
+            return False
+        elif len(name) > 100:
+            if send_error:
+                await channel.send("Failed to Save: Length of [Name] should not be > 100")
+            return False
+        return True
+
     async def save_url(self, name, url, message):
         name = name.lower()
         channel = message.channel
-        if name in self.keywords:
-            await channel.send("Failed to Save: Do not use the keywords.")
+        if not await self.is_name_valid(name, send_error=True, channel=channel):
+            return
         elif not is_url(url):
             await channel.send("Failed to Save: It's Not a Legal URL")
         elif len(url) > 1000:
@@ -94,8 +108,7 @@ class KoishiFileManager(object):
     async def save_file(self, name, message):
         name = name.lower()
         channel = message.channel
-        if name in self.keywords:
-            await channel.send("Failed to Save: Do not use the keywords.")
+        if not await self.is_name_valid(name, send_error=True, channel=channel):
             return
         try:
             if len(message.attachments) > 0:
