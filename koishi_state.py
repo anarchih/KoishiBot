@@ -1,6 +1,6 @@
 import discord
 import time
-from utils import send_image
+from utils import send_image, is_url
 import random
 import numpy as np
 import urllib
@@ -41,7 +41,10 @@ class KoishiFileManager(object):
             await self._list(message.channel)
         elif cmd == "save":
             if len(sub_cmd_list) == 2:
-                await self.save(sub_cmd_list[1].lower(), message)
+                await self.save_file(sub_cmd_list[1].lower(), message)
+            if len(sub_cmd_list) == 3:
+                await self.save_url(sub_cmd_list[1].lower(), sub_cmd_list[2], message)
+
         elif cmd == "delete":
             if len(sub_cmd_list) == 2:
                 await self.delete(sub_cmd_list[1].lower())
@@ -71,7 +74,24 @@ class KoishiFileManager(object):
 
         return 0
 
-    async def save(self, name, message):
+    async def save_url(self, name, url, message):
+        name = name.lower()
+        channel = message.channel
+        if name in self.keywords:
+            await channel.send("Failed to Save: Do not use the keywords.")
+        elif not is_url(url):
+            await channel.send("Failed to Save: It's Not a Legal URL")
+        elif len(url) > 1000:
+            await channel.send("Failed to Save: Length of Link should not be > 1000")
+        else:
+            with open(self.link_dict_path, 'rb') as f:
+                link_dict = pickle.load(f)
+            link_dict[name] = (url, "", "")
+            with open(self.link_dict_path, "wb") as f:
+                pickle.dump(link_dict, f)
+            await channel.send("Successfully Saved")
+
+    async def save_file(self, name, message):
         name = name.lower()
         channel = message.channel
         if name in self.keywords:
@@ -119,16 +139,20 @@ class KoishiFileManager(object):
 
         name = name.lower()
         if name in link_dict:
-            opener = urllib.request.URLopener()
-            opener.addheader('User-Agent', 'whatever')
-            res = opener.open(link_dict[name][0])
-            if res.code == 200:
-                import io
-                filename = link_dict[name][1] + link_dict[name][2]
-                d_file = discord.File(filename=filename, fp=io.BytesIO(res.file.fp.read()))
-                await channel.send(file=d_file)
+            if link_dict[name][1] == "" and link_dict[name][2] == "":
+                url = "\n{}".format(link_dict[name][0])
+                await channel.send(url)
             else:
-                await channel.send("Link is Lost")
+                opener = urllib.request.URLopener()
+                opener.addheader('User-Agent', 'whatever')
+                res = opener.open(link_dict[name][0])
+                if res.code == 200:
+                    import io
+                    filename = link_dict[name][1] + link_dict[name][2]
+                    d_file = discord.File(filename=filename, fp=io.BytesIO(res.file.fp.read()))
+                    await channel.send(file=d_file)
+                else:
+                    await channel.send("Link is Lost")
 
 
 """
