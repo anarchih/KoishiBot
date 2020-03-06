@@ -25,9 +25,9 @@ class Koishi(object):
         self.mention_context = KoishiMentionContext()
         self.jyanken = KoishiJyanken()
         self.test_game = KoishiTestGame()
-        self.image_manager = KoishiImageManager()
+        self.file_manager = KoishiFileManager()
 
-class KoishiImageManager(object):
+class KoishiFileManager(object):
     def __init__(self):
         self.link_dict_path = "link_dict.pickle"
         self.keywords = ["list", "save", "delete"]
