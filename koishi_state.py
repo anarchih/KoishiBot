@@ -172,6 +172,8 @@ class KoishiFileManager(object):
                     await channel.send(file=d_file)
                 else:
                     await channel.send("Link is Lost")
+        else:
+            await channel.send("Failed: [Name] is Not in the List")
 
 
 """
