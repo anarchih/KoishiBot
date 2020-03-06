@@ -94,7 +94,7 @@ class KoishiFileManager(object):
         if not await self.is_name_valid(name, send_error=True, channel=channel):
             return
         elif not is_url(url):
-            await channel.send("Failed to Save: It's Not a Legal URL")
+            await channel.send("Failed to Save: It's not a Legal URL")
         elif len(url) > 1000:
             await channel.send("Failed to Save: Length of Link should not be > 1000")
         else:
@@ -173,7 +173,7 @@ class KoishiFileManager(object):
                 else:
                     await channel.send("Link is Lost")
         else:
-            await channel.send("Failed: [Name] is Not in the List")
+            await channel.send("Failed: {} is not in the List".format(name))
 
 
 """
