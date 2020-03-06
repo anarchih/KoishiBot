@@ -47,7 +47,7 @@ class KoishiFileManager(object):
 
         elif cmd == "delete":
             if len(sub_cmd_list) == 2:
-                await self.delete(sub_cmd_list[1].lower())
+                await self.delete(sub_cmd_list[1].lower(), message.channel)
         else:
             await self.show(cmd, message.channel)
 
@@ -135,7 +135,7 @@ class KoishiFileManager(object):
 
         await channel.send(s)
 
-    async def delete(self, name):
+    async def delete(self, name, channel):
         name = name.lower()
         with open(self.link_dict_path, "rb") as f:
             link_dict = pickle.load(f)
@@ -143,8 +143,14 @@ class KoishiFileManager(object):
         if name in link_dict:
             del link_dict[name]
 
-        with open(self.link_dict_path, "rb") as f:
+        else:
+            await channel.send("Failed to Delete: [Name] is Not in the List")
+            return
+
+        with open(self.link_dict_path, "wb") as f:
             pickle.dump(link_dict, f)
+
+        await channel.send("Successfully Deleted")
 
     async def show(self, name, channel):
         with open(self.link_dict_path, "rb") as f:
