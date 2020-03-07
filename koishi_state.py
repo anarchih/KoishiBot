@@ -354,7 +354,7 @@ class KoishiJyanken(object):
         self.act_dict = {
             0: "✌️",
             1: "✊",
-            2: "✋",
+            2: "🖐️",
             3: "🖕",
         }
         self.reversed_act_dict = {v: k for k, v in self.act_dict.items()}
