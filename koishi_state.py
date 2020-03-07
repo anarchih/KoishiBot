@@ -30,22 +30,29 @@ class Koishi(object):
 class KoishiFileManager(object):
     def __init__(self):
         self.link_dict_path = "link_dict.pickle"
-        self.keywords = ["list", "save", "delete"]
+        self.list_keywords = ["list", "ls", "l"]
+        self.save_keywords = ["save", "sv", "s"]
+        self.delete_keywords = ["delete", "del", "d"]
+        self.keywords = sum([
+            self.list_keywords,
+            self.save_keywords,
+            self.delete_keywords
+        ], [])
         if not os.path.exists(self.link_dict_path):
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump({}, f)
 
     async def run(self, sub_cmd_list, message):
         cmd = sub_cmd_list[0].lower()
-        if cmd == "list":
+        if cmd in self.list_keywords:
             await self._list(message.channel)
-        elif cmd == "save":
+        elif cmd in self.save_keywords:
             if len(sub_cmd_list) == 2:
                 await self.save_file(sub_cmd_list[1].lower(), message)
             elif len(sub_cmd_list) == 3:
                 await self.save_url(sub_cmd_list[1].lower(), sub_cmd_list[2], message)
 
-        elif cmd == "delete":
+        elif cmd in self.delete_keywords:
             if len(sub_cmd_list) == 2:
                 await self.delete(sub_cmd_list[1].lower(), message.channel)
         else:
