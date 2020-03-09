@@ -54,7 +54,8 @@ async def run_command(message):
         if len(cmd_list) >= 2:
             r = random.randint(0, len(cmd_list) - 2)
             await message.channel.send(cmd_list[r + 1])
-
+    elif cmd0 == "help":
+        await message.channel.send("https://www.notion.so/Koishi-Discord-Bot-b4fea743c6d049fab8d8e1a1c768f4d5")
 @client.event
 async def on_ready():
     pass
