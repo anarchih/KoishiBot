@@ -8,6 +8,7 @@ import imghdr
 import os
 import pickle
 import math
+import re
 
 
 PATIENT_TIME = 120
@@ -32,10 +33,12 @@ class KoishiFileManager(object):
     def __init__(self):
         self.link_dict_path = "link_dict.pickle"
         self.list_keywords = ["list", "ls", "l"]
+        self.rlist_keywords = ["rlist", "rls", "rl"]
         self.save_keywords = ["save", "sv", "s"]
         self.delete_keywords = ["delete", "del", "d"]
         self.keywords = sum([
             self.list_keywords,
+            self.rlist_keywords,
             self.save_keywords,
             self.delete_keywords
         ], [])
@@ -46,10 +49,10 @@ class KoishiFileManager(object):
 
         self.list_message = None
         self.list_page = None
+        self.list_regex = ""
         self.page_size = 20
         self.reaction_list = ["⬅️", "➡️"]
-        with open(self.link_dict_path, "rb") as f:
-            self.name_list = sorted(list(pickle.load(f)))
+        self.display_list = []
 
     def add_name_list(self, name):
         if name < self.name_list[0]:
@@ -66,7 +69,11 @@ class KoishiFileManager(object):
     async def run(self, sub_cmd_list, message):
         cmd = sub_cmd_list[0].lower()
         if cmd in self.list_keywords:
-            await self._list(message.channel)
+            await self._list("", message.channel)
+        elif cmd in self.rlist_keywords:
+            if len(sub_cmd_list) == 2:
+                await self._list(sub_cmd_list[1], message.channel)
+
         elif cmd in self.save_keywords:
             if len(sub_cmd_list) == 2:
                 await self.save_file(sub_cmd_list[1].lower(), message)
@@ -131,7 +138,6 @@ class KoishiFileManager(object):
             link_dict[name] = (url, "", "")
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump(link_dict, f)
-            self.add_name_list(name)
             await channel.send("Successfully Saved")
 
     async def save_file(self, name, message):
@@ -149,23 +155,44 @@ class KoishiFileManager(object):
             if ret == -1:
                 await channel.send("Failed to Save: Unknown File Type (jpg, png & gif only)")
             elif ret == 0:
-                self.add_name_list(name)
                 await channel.send("Successfully Saved")
         except Exception as e:
             print(e)
             await channel.send("Failed to Save: Unknown Error")
 
-    async def _list(self, channel):
-
+    async def show_list(self, display_list, channel=None):
+        display_list += [""] * (self.page_size - len(display_list))
         s = "Existing Files:\n- "
-        s += "\n- ".join(self.name_list[:self.page_size])
+        s += "\n- ".join(display_list)
+        if channel:
+            return await channel.send(content=s)
+        elif self.list_message:
+            return await self.list_message.edit(content=s)
+        else:
+            return None
 
-        message = await channel.send(s)
+    async def _list(self, regex, channel):
+        with open(self.link_dict_path, "rb") as f:
+            display_list = list(pickle.load(f))
+        if regex:
+            self.list_regex = regex
+            display_list = [name for name in display_list if re.search(regex, name)]
+        else:
+            self.list_regex = ""
+
+        display_list.sort()
+
+        message = await self.show_list(display_list[:self.page_size], channel)
+
+        if not message:
+            return
+
         for reaction in self.reaction_list:
             await message.add_reaction(reaction)
 
-        self.list_message = message
+        self.display_list = display_list
         self.list_page = 0
+        self.list_message = message
 
     async def change_list_page(self, reaction):
         if reaction == self.reaction_list[0]:
@@ -174,7 +201,9 @@ class KoishiFileManager(object):
             self.list_page += 1
         else:
             return
-        total_pages = math.ceil(len(self.name_list) / self.page_size)
+
+        display_list = self.display_list
+        total_pages = math.ceil(len(display_list) / self.page_size)
         try:
             self.list_page %= total_pages
         except:
@@ -183,11 +212,8 @@ class KoishiFileManager(object):
         #
         start = self.list_page * self.page_size
         end = start + self.page_size
-        display_list = self.name_list[start: end]
-        display_list += [""] * (self.page_size - len(display_list))
-        s = "Existing Files:\n- "
-        s += "\n- ".join(display_list)
-        await self.list_message.edit(content=s)
+        display_list = display_list[start: end]
+        await self.show_list(display_list)
 
     async def delete(self, name, channel):
         name = name.lower()
@@ -204,7 +230,6 @@ class KoishiFileManager(object):
         with open(self.link_dict_path, "wb") as f:
             pickle.dump(link_dict, f)
 
-        self.del_name_list(name)
         await channel.send("Successfully Deleted")
 
     async def show(self, name, channel):
