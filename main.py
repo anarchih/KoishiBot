@@ -78,18 +78,26 @@ async def on_reaction_add(reaction, user):
     if user.bot:
         return
 
-    if koishi.test_game.status == 1 and\
+    if koishi.test_game.status == 1 and \
         reaction.message.id == koishi.test_game.game_message.id:
         await koishi.test_game.move(user, reaction.emoji)
+
+    elif koishi.file_manager.list_message and \
+        koishi.file_manager.list_message.id == reaction.message.id:
+        await koishi.file_manager.change_list_page(reaction.emoji)
 
 @client.event
 async def on_reaction_remove(reaction, user):
     if user.bot:
         return
 
-    if koishi.test_game.status == 1 and\
+    if koishi.test_game.status == 1 and \
         reaction.message.id == koishi.test_game.game_message.id:
         await koishi.test_game.move(user, reaction.emoji)
+
+    elif koishi.file_manager.list_message and \
+        koishi.file_manager.list_message.id == reaction.message.id:
+        await koishi.file_manager.change_list_page(reaction.emoji)
 
 client.run(TOKEN)
 

@@ -7,6 +7,7 @@ import urllib
 import imghdr
 import os
 import pickle
+import math
 
 
 PATIENT_TIME = 120
@@ -43,6 +44,10 @@ class KoishiFileManager(object):
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump({}, f)
 
+        self.list_message = None
+        self.list_page = None
+        self.page_size = 20
+        self.reaction_list = ["⬅️", "➡️"]
         with open(self.link_dict_path, "rb") as f:
             self.name_list = sorted(list(pickle.load(f)))
 
@@ -151,16 +156,38 @@ class KoishiFileManager(object):
             await channel.send("Failed to Save: Unknown Error")
 
     async def _list(self, channel):
-        """
-        with open(self.link_dict_path, "rb") as f:
-            link_dict = pickle.load(f)
-        files = list(link_dict.keys())
-        files.sort()
-        """
-        s = "Existing Files:\n- "
-        s += "\n- ".join(self.name_list)
 
-        await channel.send(s)
+        s = "Existing Files:\n- "
+        s += "\n- ".join(self.name_list[:self.page_size])
+
+        message = await channel.send(s)
+        for reaction in self.reaction_list:
+            await message.add_reaction(reaction)
+
+        self.list_message = message
+        self.list_page = 0
+
+    async def change_list_page(self, reaction):
+        if reaction == self.reaction_list[0]:
+            self.list_page -= 1
+        elif reaction == self.reaction_list[1]:
+            self.list_page += 1
+        else:
+            return
+        total_pages = math.ceil(len(self.name_list) / self.page_size)
+        try:
+            self.list_page %= total_pages
+        except:
+            return
+
+        #
+        start = self.list_page * self.page_size
+        end = start + self.page_size
+        display_list = self.name_list[start: end]
+        display_list += [""] * (self.page_size - len(display_list))
+        s = "Existing Files:\n- "
+        s += "\n- ".join(display_list)
+        await self.list_message.edit(content=s)
 
     async def delete(self, name, channel):
         name = name.lower()
