@@ -38,9 +38,25 @@ class KoishiFileManager(object):
             self.save_keywords,
             self.delete_keywords
         ], [])
+
         if not os.path.exists(self.link_dict_path):
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump({}, f)
+
+        with open(self.link_dict_path, "rb") as f:
+            self.name_list = sorted(list(pickle.load(f)))
+
+    def add_name_list(self, name):
+        if name < self.name_list[0]:
+            self.name_list.insert(0, name)
+        else:
+            for i, n in enumerate(self.name_list):
+                if n > name:
+                    self.name_list.insert(i, name)
+                    break
+
+    def del_name_list(self, name):
+        self.name_list.remove(name)
 
     async def run(self, sub_cmd_list, message):
         cmd = sub_cmd_list[0].lower()
@@ -110,6 +126,7 @@ class KoishiFileManager(object):
             link_dict[name] = (url, "", "")
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump(link_dict, f)
+            self.add_name_list(name)
             await channel.send("Successfully Saved")
 
     async def save_file(self, name, message):
@@ -127,18 +144,21 @@ class KoishiFileManager(object):
             if ret == -1:
                 await channel.send("Failed to Save: Unknown File Type (jpg, png & gif only)")
             elif ret == 0:
+                self.add_name_list(name)
                 await channel.send("Successfully Saved")
         except Exception as e:
             print(e)
             await channel.send("Failed to Save: Unknown Error")
 
     async def _list(self, channel):
+        """
         with open(self.link_dict_path, "rb") as f:
             link_dict = pickle.load(f)
         files = list(link_dict.keys())
         files.sort()
+        """
         s = "Existing Files:\n- "
-        s += "\n- ".join(files)
+        s += "\n- ".join(self.name_list)
 
         await channel.send(s)
 
@@ -157,6 +177,7 @@ class KoishiFileManager(object):
         with open(self.link_dict_path, "wb") as f:
             pickle.dump(link_dict, f)
 
+        self.del_name_list(name)
         await channel.send("Successfully Deleted")
 
     async def show(self, name, channel):
