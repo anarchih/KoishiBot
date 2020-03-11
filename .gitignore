@@ -1,4 +1,6 @@
 *.pickle
 *.png
 __pycache__
+
+test_*.py
 token_for_koishi.py
