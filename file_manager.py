@@ -21,12 +21,14 @@ class FileManager(object):
         self.save_keywords = ["save", "sv", "s"]
         self.delete_keywords = ["delete", "del", "d"]
         self.author_keywords = ["author", "a"]
+        self.rename_keywords = ["rename", "rn"]
         self.keywords = sum([
             self.list_keywords,
             self.rlist_keywords,
             self.save_keywords,
             self.delete_keywords,
-            self.author_keywords
+            self.author_keywords,
+            self.rename_keywords
         ], [])
 
         if not os.path.exists(self.link_dict_path):
@@ -81,6 +83,9 @@ class FileManager(object):
         elif cmd in self.author_keywords:
             if len(sub_cmd_list) == 2:
                 await self.show_author(sub_cmd_list[1].lower(), message.channel)
+        elif cmd in self.rename_keywords:
+            if len(sub_cmd_list) == 3:
+                await self.rename(sub_cmd_list[1].lower(), sub_cmd_list[2].lower(), message.channel)
         else:
             await self.show(cmd, message.channel)
 
@@ -267,4 +272,21 @@ class FileManager(object):
             author_name, author_id = link_dict[name][3], link_dict[name][4]
             await channel.send("Author Name: {}\nAuthor ID: {}".format(author_name, author_id))
         else:
-            await channel.send("Failed: {} is not in the List".format(name))
+            await channel.send("Failed: {} is not in the list".format(name))
+
+    async def rename(self, old_name, new_name, channel):
+        with open(self.link_dict_path, "rb") as f:
+            link_dict = pickle.load(f)
+
+        if old_name in link_dict:
+            link_dict[new_name] = link_dict[old_name]
+            del link_dict[old_name]
+        else:
+            await channel.send("Failed to Rename: {} is not in the list".format(old_name))
+            return
+
+        with open(self.link_dict_path, "wb") as f:
+            pickle.dump(link_dict, f)
+        await channel.send("Successfully Renamed")
+
+
