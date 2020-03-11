@@ -1,65 +1,44 @@
 import os
 import time
 import discord
-from koishi_state import Koishi
-from utils import send_image
+import utils
 import shlex
 import random
+import config as cfg
 from token_for_koishi import TOKEN
+from file_manager import FileManager
+from koishi_cmd import *
+from tools import Choose
+from game import TestGame
 
-CMD_PREFIX = "k!"
+class Koishi(object):
+    def __init__(self):
+        self.on_command_list = []
+        self.on_reaction_list = []
 
+        self.mention_context = KoishiMentionContext()
+        self.jyanken = KoishiJyanken(self)
+        self._help = KoishiHelp(self)
+        self.laugh = KoishiLaugh(self)
+
+        self.test_game = TestGame(self)
+        self.choose = Choose(self)
+        self.file_manager = FileManager(self, link_dict_path="link_dict.pickle")
+
+    def regist_on_command(self, app):
+        self.on_command_list.append(app)
+
+    def regist_on_reaction(self, app):
+        self.on_reaction_list.append(app)
 
 client = discord.Client()
 koishi = Koishi()
 
-def split_command(content, num):
-    cmd_list = content.split(None, num)
-    if len(cmd_list) <= num:
-        return None
-    else:
-        return cmd_list[num]
 
-
-async def run_command(message):
-    content = message.content
-    channel = message.channel
-    # TODO: need better solution
-    # Ignore the input with escaped character currently.
-    try:
-        content = content[len(CMD_PREFIX):]
-        cmd_list = shlex.split(content)
-    except ValueError:
-        return
-
-    if len(cmd_list) == 0:
-        return None
-    cmd0 = cmd_list[0].lower()
-
-    if cmd0 == "laugh":
-        await send_image(channel, "happy.png")
-
-    elif cmd0 == "jyanken" or cmd0 == "jk":
-        if len(cmd_list) == 2:
-            await koishi.jyanken.do_jyanken(channel, cmd_list[1])
-
-    elif cmd0 == "game":
-        await koishi.test_game.start(channel)
-
-    elif cmd0 == "file":
-        if len(cmd_list) >= 2:
-            await koishi.file_manager.run(cmd_list[1:], message)
-
-    elif cmd0 == "choose":
-        if len(cmd_list) >= 2:
-            r = random.randint(0, len(cmd_list) - 2)
-            await message.channel.send(cmd_list[r + 1])
-    elif cmd0 == "help":
-        await message.channel.send("<https://www.notion.so/Koishi-Discord-Bot-b4fea743c6d049fab8d8e1a1c768f4d5>")
 @client.event
 async def on_ready():
     pass
-# 0 normal, 1 annoy, 2 angry
+
 async def mentioned_act(message):
     await koishi.mention_context.mentioned(message.channel)
 
@@ -68,8 +47,8 @@ async def on_message(message):
     if message.author.bot:
         return
     # print(message.content)
-    if message.content.lower().startswith(CMD_PREFIX):
-        await run_command(message)
+    if message.content.lower().startswith(cfg.CMD_PREFIX):
+        await utils.on_command(message, koishi)
         #await message.channel.send("!!")
     elif client.user in message.mentions:
         await mentioned_act(message)
@@ -79,26 +58,16 @@ async def on_reaction_add(reaction, user):
     if user.bot:
         return
 
-    if koishi.test_game.status == 1 and \
-        reaction.message.id == koishi.test_game.game_message.id:
-        await koishi.test_game.move(user, reaction.emoji)
-
-    elif koishi.file_manager.list_message and \
-        koishi.file_manager.list_message.id == reaction.message.id:
-        await koishi.file_manager.change_list_page(reaction.emoji)
+    for app in koishi.on_reaction_list:
+        await app.on_reaction(reaction, user)
 
 @client.event
 async def on_reaction_remove(reaction, user):
     if user.bot:
         return
 
-    if koishi.test_game.status == 1 and \
-        reaction.message.id == koishi.test_game.game_message.id:
-        await koishi.test_game.move(user, reaction.emoji)
-
-    elif koishi.file_manager.list_message and \
-        koishi.file_manager.list_message.id == reaction.message.id:
-        await koishi.file_manager.change_list_page(reaction.emoji)
+    for app in koishi.on_reaction_list:
+        await app.on_reaction(reaction, user)
 
 client.run(TOKEN)
 
