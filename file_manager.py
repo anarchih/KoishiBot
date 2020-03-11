@@ -122,7 +122,7 @@ class FileManager(object):
             return False
         elif len(name) > 100:
             if send_error:
-                await channel.send("Failed to Save: Length of [Name] should not be > 100")
+                await channel.send("Failed to Save: length of {} should not be > 100".format(name))
             return False
         return True
 
@@ -133,9 +133,9 @@ class FileManager(object):
         if not await self.is_name_valid(name, send_error=True, channel=channel):
             return
         elif not is_url(url):
-            await channel.send("Failed to Save: It's not a Legal URL")
+            await channel.send("Failed to Save: It's not a legal url")
         elif len(url) > 1000:
-            await channel.send("Failed to Save: Length of Link should not be > 1000")
+            await channel.send("Failed to Save: Length of link should not be > 1000")
         else:
             with open(self.link_dict_path, 'rb') as f:
                 link_dict = pickle.load(f)
@@ -153,7 +153,7 @@ class FileManager(object):
             if len(message.attachments) > 0:
                 ret = self.save_attachment_link(name, message.attachments[0], message.author)
             else:
-                await channel.send("Failed to Save: No Attachment")
+                await channel.send("Failed to Save: No attachment")
                 return
 
             if ret == -1:
@@ -232,7 +232,7 @@ class FileManager(object):
             del link_dict[name]
 
         else:
-            await channel.send("Failed to Delete: [Name] is Not in the List")
+            await channel.send("Failed to Delete: {} is not in the list".format(name))
             return
 
         with open(self.link_dict_path, "wb") as f:
@@ -259,9 +259,9 @@ class FileManager(object):
                     d_file = discord.File(filename=filename, fp=io.BytesIO(res.file.fp.read()))
                     await channel.send(file=d_file)
                 else:
-                    await channel.send("Link is Lost")
+                    await channel.send("Link is lost")
         else:
-            await channel.send("Failed: {} is not in the List".format(name))
+            await channel.send("Failed: {} is not in the list".format(name))
 
     async def show_author(self, name, channel):
         with open(self.link_dict_path, "rb") as f:
