@@ -20,11 +20,13 @@ class FileManager(object):
         self.rlist_keywords = ["rlist", "rls", "rl"]
         self.save_keywords = ["save", "sv", "s"]
         self.delete_keywords = ["delete", "del", "d"]
+        self.author_keywords = ["author", "a"]
         self.keywords = sum([
             self.list_keywords,
             self.rlist_keywords,
             self.save_keywords,
-            self.delete_keywords
+            self.delete_keywords,
+            self.author_keywords
         ], [])
 
         if not os.path.exists(self.link_dict_path):
@@ -76,10 +78,13 @@ class FileManager(object):
         elif cmd in self.delete_keywords:
             if len(sub_cmd_list) == 2:
                 await self.delete(sub_cmd_list[1].lower(), message.channel)
+        elif cmd in self.author_keywords:
+            if len(sub_cmd_list) == 2:
+                await self.show_author(sub_cmd_list[1].lower(), message.channel)
         else:
             await self.show(cmd, message.channel)
 
-    def save_attachment_link(self, name, attachment):
+    def save_attachment_link(self, name, attachment, user):
         url, filename_ext = attachment.url, attachment.filename
         filename, file_ext = os.path.splitext(filename_ext)
         """
@@ -96,7 +101,7 @@ class FileManager(object):
         if os.path.exists(self.link_dict_path):
             with open(self.link_dict_path, 'rb') as f:
                 link_dict = pickle.load(f)
-            link_dict[name] = (url, filename, file_ext)
+            link_dict[name] = (url, filename, file_ext, str(user), user.id)
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump(link_dict, f)
 
@@ -118,6 +123,7 @@ class FileManager(object):
 
     async def save_url(self, name, url, message):
         name = name.lower()
+        user = message.author
         channel = message.channel
         if not await self.is_name_valid(name, send_error=True, channel=channel):
             return
@@ -128,7 +134,7 @@ class FileManager(object):
         else:
             with open(self.link_dict_path, 'rb') as f:
                 link_dict = pickle.load(f)
-            link_dict[name] = (url, "", "")
+            link_dict[name] = (url, "", "", str(user), user.id)
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump(link_dict, f)
             await channel.send("Successfully Saved")
@@ -140,7 +146,7 @@ class FileManager(object):
             return
         try:
             if len(message.attachments) > 0:
-                ret = self.save_attachment_link(name, message.attachments[0])
+                ret = self.save_attachment_link(name, message.attachments[0], message.author)
             else:
                 await channel.send("Failed to Save: No Attachment")
                 return
@@ -249,5 +255,16 @@ class FileManager(object):
                     await channel.send(file=d_file)
                 else:
                     await channel.send("Link is Lost")
+        else:
+            await channel.send("Failed: {} is not in the List".format(name))
+
+    async def show_author(self, name, channel):
+        with open(self.link_dict_path, "rb") as f:
+            link_dict = pickle.load(f)
+
+        name = name.lower()
+        if name in link_dict:
+            author_name, author_id = link_dict[name][3], link_dict[name][4]
+            await channel.send("Author Name: {}\nAuthor ID: {}".format(author_name, author_id))
         else:
             await channel.send("Failed: {} is not in the List".format(name))
