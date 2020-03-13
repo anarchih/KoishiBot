@@ -12,14 +12,16 @@ from mixed_app import *
 from game import TestGame
 
 class Koishi(object):
-    def __init__(self):
+    def __init__(self, client):
         self.on_command_list = []
         self.on_reaction_list = []
+        self.on_message_list = []
 
-        self.mention_context = KoishiMentionContext()
+        self.mention_context = KoishiMentionContext(self, client)
         self.jyanken = KoishiJyanken(self)
         self._help = KoishiHelp(self)
         self.laugh = KoishiLaugh(self)
+        self.reaction_echo = KoishiReactionEcho(self)
 
         self.test_game = TestGame(self)
         self.choose = Choose(self)
@@ -31,16 +33,17 @@ class Koishi(object):
     def regist_on_reaction(self, app):
         self.on_reaction_list.append(app)
 
+    def regist_on_message(self, app):
+        self.on_message_list.append(app)
+
 client = discord.Client()
-koishi = Koishi()
+koishi = Koishi(client)
 
 
 @client.event
 async def on_ready():
     pass
 
-async def mentioned_act(message):
-    await koishi.mention_context.mentioned(message.channel)
 
 @client.event
 async def on_message(message):
@@ -49,9 +52,9 @@ async def on_message(message):
     # print(message.content)
     if message.content.lower().startswith(cfg.CMD_PREFIX):
         await utils.on_command(message, koishi)
-        #await message.channel.send("!!")
-    elif client.user in message.mentions:
-        await mentioned_act(message)
+
+    for app in koishi.on_message_list:
+        await app.on_message(message)
 
 @client.event
 async def on_reaction_add(reaction, user):
