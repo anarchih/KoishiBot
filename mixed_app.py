@@ -15,3 +15,16 @@ class Choose(object):
             return True
         else:
             return False
+
+
+class GuildReactionEcho(object):
+    def __init__(self, agent):
+        agent.regist_on_message(self)
+
+    async def on_message(self, message):
+        emojis = message.channel.guild.emojis
+        for emoji in emojis:
+            if str(emoji) in message.content:
+                await message.add_reaction(emoji)
+
+

@@ -8,7 +8,7 @@ import config as cfg
 from token_for_koishi import TOKEN
 from file_manager import FileManager
 from koishi_cmd import *
-from tools import Choose
+from mixed_app import *
 from game import TestGame
 
 class Koishi(object):
