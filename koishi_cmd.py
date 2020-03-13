@@ -14,6 +14,27 @@ import asyncio
 PATIENT_TIME = 120
 RECOVER_TIME = 120
 
+
+class KoishiReactionEcho(object):
+    def __init__(self, agent):
+        # Possible to be removed/modified by the guild admin
+        self.koishi_emoji_dict = {
+            "Koishi_smile": 681346761012412538,
+            "Koishi_shock": 686589788546924559,
+            "Koishi_shiny_eye": 687625146466304031,
+            "Koishi_secretly_watching": 675593130040623117,
+            "Koishi_cry": 686589787255341066,
+        }
+
+        agent.regist_on_message(self)
+
+    async def on_message(self, message):
+        for name, _id in self.koishi_emoji_dict.items():
+            emoji = "<:%s:%d>" % (name, _id)
+            if emoji in message.content:
+                await message.add_reaction(emoji)
+
+
 class KoishiStatus(object):
     def __init__(self):
         self.happiness = 0
