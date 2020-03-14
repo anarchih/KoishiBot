@@ -18,19 +18,27 @@ RECOVER_TIME = 120
 class KoishiReactionEcho(object):
     def __init__(self, agent):
         # Possible to be removed/modified by the guild admin
-        self.koishi_emoji_dict = {
+        self.emoji_dict = {
             "Koishi_smile": 681346761012412538,
             "Koishi_shock": 686589788546924559,
             "Koishi_shiny_eye": 687625146466304031,
             "Koishi_secretly_watching": 675593130040623117,
             "Koishi_cry": 686589787255341066,
         }
+        self.gif_emoji_dict = {
+            "Koishi_play_hat": 686603096495095815,
+            "Koishi_facial_expressions": 686589788903571488,
+        }
 
         agent.regist_on_message(self)
 
     async def on_message(self, message):
-        for name, _id in self.koishi_emoji_dict.items():
+        for name, _id in self.emoji_dict.items():
             emoji = "<:%s:%d>" % (name, _id)
+            if emoji in message.content:
+                await message.add_reaction(emoji)
+        for name, _id in self.gif_emoji_dict.items():
+            emoji = "<a:%s:%d>" % (name, _id)
             if emoji in message.content:
                 await message.add_reaction(emoji)
 
