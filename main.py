@@ -49,7 +49,6 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-    # print(message.content)
     if message.content.lower().startswith(cfg.CMD_PREFIX):
         await utils.on_command(message, koishi)
 
@@ -72,37 +71,7 @@ async def on_reaction_remove(reaction, user):
     for app in koishi.on_reaction_list:
         await app.on_reaction(reaction, user)
 
-from aioconsole import ainput
-async def cli():
-    while True:
-        if not client.is_ready():
-            await asyncio.sleep(.5)
-        else:
-            break
-    # init_channel = client.get_channel(684018621919264798)
-    # init_message = await init_channel.send(":thonk:")
-    # init_message.channel = None
-    channel = client.get_channel(684018621919264798)
-    guild = channel.guild
-    while True:
-        print(guild.name, channel.name)
-        content = await ainput(">>> ")
-        if content.startswith("@c"):
-            cmd_list = shlex.split(content)
-            if len(cmd_list) == 1:
-                channels = list(client.get_all_channels())
-                print([(str(c.guild), str(c)) for c in channels])
-            elif len(cmd_list) == 3:
-                t_g, t_c = cmd_list[1], cmd_list[2]
-                channels = list(client.get_all_channels())
-                target_channels = [c for c in channels if str(c.guild) == t_g and str(c) == t_c]
-                if len(target_channels) == 1:
-                    channel  = target_channels[0]
-                    guild = channel.guild
 
-        elif content.startswith("!"):
-            await channel.send(content[1:])
-
-client.loop.create_task(cli())
+client.loop.create_task(utils.cli(client, default_channel_id=483590049263517696))
 client.run(TOKEN)
 
