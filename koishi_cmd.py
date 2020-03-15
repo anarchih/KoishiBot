@@ -33,11 +33,14 @@ class KoishiReactionEcho(object):
         agent.regist_on_message(self)
 
     async def on_message(self, message):
-        for name, _id in self.emoji_dict.items():
+        emojis = message.channel.guild.emojis
+        img_emoji_dict = {e.name: e.id for e in emojis if "Koishi" in e.name and not e.animated}
+        gif_emoji_dict = {e.name: e.id for e in emojis if "Koishi" in e.name and e.animated}
+        for name, _id in img_emoji_dict.items():
             emoji = "<:%s:%d>" % (name, _id)
             if emoji in message.content:
                 await message.add_reaction(emoji)
-        for name, _id in self.gif_emoji_dict.items():
+        for name, _id in gif_emoji_dict.items():
             emoji = "<a:%s:%d>" % (name, _id)
             if emoji in message.content:
                 await message.add_reaction(emoji)
