@@ -99,6 +99,9 @@ class KoishiJyanken(object):
 
     async def do_jyanken(self, channel, other_act_key):
         try:
+            if other_act_key not in self.reversed_act_dict:
+                return
+
             other_act = self.reversed_act_dict[other_act_key]
 
             if other_act == 3:
