@@ -5,7 +5,7 @@ import utils
 import shlex
 import random
 import config as cfg
-from token_for_koishi import TOKEN
+import discord_token as token
 from file_manager import FileManager
 from koishi_cmd import *
 from mixed_app import *
@@ -73,5 +73,5 @@ async def on_reaction_remove(reaction, user):
 
 
 client.loop.create_task(utils.cli(client, default_channel_id=483590049263517696))
-client.run(TOKEN)
+client.run(token.KOISHI)
 

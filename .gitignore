@@ -3,4 +3,4 @@
 __pycache__
 
 test_*.py
-token_for_koishi.py
+discord_token.py
