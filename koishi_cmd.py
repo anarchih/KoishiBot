@@ -125,8 +125,8 @@ class KoishiJyanken(object):
         except Exception as e:
             print(e)
 class KoishiMentionContext(object):
-    def __init__(self, client, state=None):
-        self.client = client
+    def __init__(self, state=None):
+        self.client = None
         self.time_list = [0, 0, 0]
         if not state:
             self.transition_to(NormalState())
@@ -147,9 +147,13 @@ class KoishiMentionContext(object):
     def transition_to(self, state):
         self._state = state
         self._state.context = self
+
     async def on_message(self, message):
-        if self.client.user in message.mentions:
+        if self.client and self.client.user in message.mentions:
             await self.mentioned(message.channel)
+
+    async def on_ready(self, client):
+        self.client = client
 
     async def mentioned(self, channel):
         await self._state.send_action(channel)

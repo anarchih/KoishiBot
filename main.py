@@ -17,7 +17,7 @@ class Koishi(object):
         self.on_reaction_list = []
         self.on_message_list = []
         self.applications = [
-            KoishiMentionContext(client),
+            KoishiMentionContext(),
             KoishiJyanken(),
             KoishiHelp(),
             KoishiLaugh(),
@@ -54,7 +54,8 @@ koishi = Koishi(client)
 
 @client.event
 async def on_ready():
-    pass
+    for app in koishi.on_ready_list:
+        await app.on_ready(client)
 
 
 @client.event
