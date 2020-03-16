@@ -13,7 +13,7 @@ import asyncio
 
 
 class FileManager(object):
-    def __init__(self, agent, link_dict_path, cmd_keys=["file"]):
+    def __init__(self, link_dict_path, cmd_keys=["file"]):
         self.link_dict_path = link_dict_path
         self.cmd_keys = cmd_keys
         self.list_keywords = ["list", "ls", "l"]
@@ -42,8 +42,6 @@ class FileManager(object):
         self.reaction_list = ["⬅️", "➡️"]
         self.display_list = []
 
-        agent.regist_on_command(self)
-        agent.regist_on_reaction(self)
 
     def add_name_list(self, name):
         if name < self.name_list[0]:

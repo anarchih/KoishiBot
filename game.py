@@ -76,7 +76,7 @@ class KoishiTestGame(object):
         await self.update_map()
 """
 class TestGame(object):
-    def __init__(self, agent, cmd_keys=["game"]):
+    def __init__(self, cmd_keys=["game"]):
         self.game_message = None
         self.cmd_keys = cmd_keys
         self.status = 0
@@ -89,8 +89,6 @@ class TestGame(object):
         }
         self.reaction_list = ["⬅️", "⏸️", "➡️"]
 
-        agent.regist_on_command(self)
-        agent.regist_on_reaction(self)
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:

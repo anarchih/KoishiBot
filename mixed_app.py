@@ -2,10 +2,9 @@ import discord
 import random
 
 class Choose(object):
-    def __init__(self, agent, cmd_keys=["choose"]):
+    def __init__(self, cmd_keys=["choose"]):
         self.cmd_keys = cmd_keys
 
-        agent.regist_on_command(self)
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
@@ -18,8 +17,8 @@ class Choose(object):
 
 
 class GuildReactionEcho(object):
-    def __init__(self, agent):
-        agent.regist_on_message(self)
+    def __init__(self):
+        pass
 
     async def on_message(self, message):
         emojis = message.channel.guild.emojis

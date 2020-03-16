@@ -16,7 +16,7 @@ RECOVER_TIME = 120
 
 
 class KoishiReactionEcho(object):
-    def __init__(self, agent):
+    def __init__(self):
         # Possible to be removed/modified by the guild admin
         self.emoji_dict = {
             "Koishi_smile": 681346761012412538,
@@ -30,7 +30,6 @@ class KoishiReactionEcho(object):
             "Koishi_facial_expressions": 686589788903571488,
         }
 
-        agent.regist_on_message(self)
 
     async def on_message(self, message):
         emojis = message.channel.guild.emojis
@@ -54,10 +53,9 @@ class KoishiStatus(object):
 
 
 class KoishiLaugh(object):
-    def __init__(self, agent, cmd_keys=["laugh"]):
+    def __init__(self, cmd_keys=["laugh"]):
         self.cmd_keys = cmd_keys
 
-        agent.regist_on_command(self)
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
@@ -68,10 +66,9 @@ class KoishiLaugh(object):
 
 
 class KoishiHelp(object):
-    def __init__(self, agent, cmd_keys=["help"]):
+    def __init__(self, cmd_keys=["help"]):
         self.cmd_keys = cmd_keys
 
-        agent.regist_on_command(self)
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
@@ -81,7 +78,7 @@ class KoishiHelp(object):
             return False
 
 class KoishiJyanken(object):
-    def __init__(self, agent, cmd_keys=["jyanken", "jk"]):
+    def __init__(self, cmd_keys=["jyanken", "jk"]):
         self.cmd_keys = cmd_keys
         self.act_dict = {
             0: "✌️",
@@ -92,7 +89,6 @@ class KoishiJyanken(object):
         self.reversed_act_dict = {v: k for k, v in self.act_dict.items()}
         self.refused_time = 0
 
-        agent.regist_on_command(self)
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
@@ -129,7 +125,7 @@ class KoishiJyanken(object):
         except Exception as e:
             print(e)
 class KoishiMentionContext(object):
-    def __init__(self, agent, client, state=None):
+    def __init__(self, client, state=None):
         self.client = client
         self.time_list = [0, 0, 0]
         if not state:
@@ -137,7 +133,6 @@ class KoishiMentionContext(object):
         else:
             self.transition_to(state)
 
-        agent.regist_on_message(self)
     def update_time_list(self):
         mentioned_time = time.time()
         self.time_list.append(mentioned_time)

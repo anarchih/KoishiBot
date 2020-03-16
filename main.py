@@ -16,25 +16,37 @@ class Koishi(object):
         self.on_command_list = []
         self.on_reaction_list = []
         self.on_message_list = []
+        self.applications = [
+            KoishiMentionContext(client),
+            KoishiJyanken(),
+            KoishiHelp(),
+            KoishiLaugh(),
+            KoishiHelp(),
+            KoishiLaugh(),
+            KoishiReactionEcho(),
+            TestGame(),
+            Choose(),
+            FileManager(link_dict_path="link_dict.pickle")
+        ]
 
-        self.mention_context = KoishiMentionContext(self, client)
-        self.jyanken = KoishiJyanken(self)
-        self._help = KoishiHelp(self)
-        self.laugh = KoishiLaugh(self)
-        self.reaction_echo = KoishiReactionEcho(self)
+        self.regist_events()
 
-        self.test_game = TestGame(self)
-        self.choose = Choose(self)
-        self.file_manager = FileManager(self, link_dict_path="link_dict.pickle")
+    def regist_events(self):
+        self.on_command_list = []
+        self.on_reaction_list = []
+        self.on_message_list = []
+        self.on_ready_list = []
 
-    def regist_on_command(self, app):
-        self.on_command_list.append(app)
-
-    def regist_on_reaction(self, app):
-        self.on_reaction_list.append(app)
-
-    def regist_on_message(self, app):
-        self.on_message_list.append(app)
+        for app in self.applications:
+            app_dict = app.__class__.__dict__
+            if "on_command" in app_dict:
+                self.on_command_list.append(app)
+            if "on_reaction" in app_dict:
+                self.on_reaction_list.append(app)
+            if "on_message" in app_dict:
+                self.on_message_list.append(app)
+            if "on_ready" in app_dict:
+                self.on_ready_list.append(app)
 
 client = discord.Client()
 koishi = Koishi(client)
