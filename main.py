@@ -24,6 +24,8 @@ class Koishi(object):
             KoishiHelp(),
             KoishiLaugh(),
             KoishiReactionEcho(),
+
+            ImageText(),
             TestGame(),
             Choose(),
             FileManager(link_dict_path="link_dict.pickle")
