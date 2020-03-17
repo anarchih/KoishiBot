@@ -4,6 +4,8 @@ import config as cfg
 import shlex
 from aioconsole import ainput
 import asyncio
+import emoji
+
 
 is_url_regex = re.compile(
         r'^(?:http|ftp)s?://' # http:// or https://
@@ -43,8 +45,7 @@ async def on_command(message, agent):
             return
     await message.channel.send("Incorrect Command!")
 
-def to_emoji(content, channel, client):
-    # emojis = channel.guild.emojis
+def to_emoji(content, client):
     emojis = client.emojis
     img_emoji_dict = {e.name: str(e.id) for e in emojis if not e.animated}
     gif_emoji_dict = {e.name: str(e.id) for e in emojis if e.animated}
@@ -93,8 +94,31 @@ async def cli(client, default_channel_id):
                         channel  = target_channels[0]
                         guild = channel.guild
 
+            elif content.startswith("@ra") or content.startswith("@rd"):
+                cmd_list = shlex.split(content)
+                if len(cmd_list) >= 3:
+                    emoji_list = []
+                    messages = await channel.history(limit=20).flatten()
+                    try:
+                        num = int(cmd_list[-1])
+                        message = messages[num]
+                    except:
+                        print("Last Argument should be integer")
+
+                    for cmd in cmd_list[1:-1]:
+                        try:
+                            cmd = emoji.emojize(cmd)
+                            cmd = to_emoji(" " + cmd, client).strip()
+                            if cmd_list[0] == "@ra":
+                                await message.add_reaction(cmd)
+                            else:
+                                await message.remove_reaction(cmd, client.user)
+                        except Exception as e:
+                            print(e)
+                            pass
+
             elif content.startswith("!"):
-                content = to_emoji(content[1:], channel, client)
+                content = to_emoji(content[1:], client)
                 await channel.send(content)
         except KeyboardInterrupt as e:
             return
