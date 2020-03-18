@@ -11,7 +11,7 @@ from file_manager import FileManager
 from koishi_cmd import *
 from mixed_app import *
 from game import TestGame
-from caption_generator import ImageText, TestImageText
+from caption_generator import BaseCaption
 
 class Koishi(object):
     def __init__(self, client):
@@ -27,8 +27,8 @@ class Koishi(object):
             KoishiLaugh(),
             KoishiReactionEcho(),
 
-            ImageText(),
-            TestImageText(),
+            # BaseCaption(),
+            KoishiSimpleCaption(),
             TestGame(),
             Choose(),
             FileManager(link_dict_path="link_dict.pickle")

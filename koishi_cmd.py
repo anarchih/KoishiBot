@@ -10,9 +10,29 @@ import pickle
 import math
 import re
 import asyncio
-
+import PIL
+from caption_generator import BaseCaption
 PATIENT_TIME = 120
 RECOVER_TIME = 120
+
+
+class KoishiSimpleCaption(BaseCaption):
+    def __init__(self, cmd_keys=["caption"]):
+        super(KoishiSimpleCaption, self).__init__(cmd_keys)
+
+        self.margin_top_w, self.margin_top_b = 0, 80
+        self.margin_right_w, self.margin_right_b = 0, 40
+        self.margin_left_w, self.margin_left_b = 0, 40
+
+        self.margin_color = (255, 255, 255, 255)
+        self.text_color = (0, 0, 0, 0)
+        self.text_width_w, self.text_width_b = .9, 0
+        self.text_height_w, self.text_height_b = 0, self.margin_top_b * .9
+        self.text_y_w, self.text_y_b = .0, self.margin_top_b / 2
+
+    def get_image(self, arg, message):
+        filename = "annoy.png"
+        return PIL.Image.open(filename)
 
 
 class KoishiReactionEcho(object):
