@@ -10,6 +10,7 @@ from file_manager import FileManager
 from koishi_cmd import *
 from mixed_app import *
 from game import TestGame
+from caption_generator import ImageText
 
 class Koishi(object):
     def __init__(self, client):
