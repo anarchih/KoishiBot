@@ -40,7 +40,7 @@ async def on_command(message, agent):
 
     cmd0 = cmd_list[0].lower()
 
-    for app in agent.on_command_list:
+    for app in agent.event_dict["on_command"]:
         if await app.on_command(cmd0, cmd_list[1:], message):
             return
     await message.channel.send("Incorrect Command!")
