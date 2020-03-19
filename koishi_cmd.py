@@ -31,7 +31,7 @@ class KoishiSimpleCaption(BaseCaption):
         self.text_y_w, self.text_y_b = .0, self.margin_top_b / 2
 
     def get_image(self, arg, message):
-        filename = "annoy.png"
+        filename = "annoyed.png"
         return PIL.Image.open(filename)
 
 
@@ -79,7 +79,7 @@ class KoishiLaugh(object):
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
-            await utils.send_image(message.channel, "happy.png")
+            await utils.send_image(message.channel, "laugh.png")
             return True
         else:
             return False
@@ -130,7 +130,7 @@ class KoishiJyanken(object):
                 return
 
             if time.time() - self.refused_time < 60:
-                await utils.send_image(channel, "annoy.png")
+                await utils.send_image(channel, "annoyed.png")
                 return
 
             act = random.randint(0, 2)
@@ -194,7 +194,7 @@ class NormalState(object):
         if time_list[-1] - time_list[0] <= PATIENT_TIME:
             self.context.transition_to(AnnoyState())
             self.context.clear_time_list_except_latest()
-        await utils.send_image(channel, "happy.png")
+        await utils.send_image(channel, "laugh.png")
 
 class AnnoyState(object):
     async def send_action(self, channel):
