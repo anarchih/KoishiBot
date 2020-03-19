@@ -26,14 +26,31 @@ class KoishiSimpleCaption(BaseCaption):
 
         self.margin_color = (255, 255, 255, 255)
         self.text_color = (0, 0, 0, 0)
+        self.text_min_size, self.text_max_size = 12, 36
         self.text_width_w, self.text_width_b = .9, 0
         self.text_height_w, self.text_height_b = 0, self.margin_top_b * .9
         self.text_y_w, self.text_y_b = .0, self.margin_top_b / 2
 
-    def get_image(self, arg, message):
-        filename = "annoyed.png"
-        return PIL.Image.open(filename)
+        self.image_list = [
+            "annoyed", "angry", "cry",
+            "ya", "ridicule", "laugh",
+            "excited", "displeased", "facepalm"
+        ]
 
+    def get_image(self, args, message):
+        try:
+            arg = args[1]
+        except:
+            r = random.randint(0, len(self.image_list) - 1)
+            arg = self.image_list[r]
+
+        for filename in self.image_list:
+            if arg == filename:
+                filename = filename +".png"
+                return PIL.Image.open(filename), None
+
+        return None, "Legal keywords: " + ", ".join(self.image_list)
+        filename = self.image_list[0] +".png"
 
 class KoishiReactionEcho(object):
     def __init__(self):
@@ -125,7 +142,7 @@ class KoishiJyanken(object):
             other_act = self.reversed_act_dict[other_act_key]
 
             if other_act == 3:
-                await utils.send_image(channel, "displeasing.png")
+                await utils.send_image(channel, "displeased.png")
                 self.refused_time = time.time()
                 return
 
