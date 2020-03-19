@@ -7,6 +7,7 @@ from PIL import ImageFont
 from PIL import ImageDraw
 import io
 import numpy as np
+import config as cfg
 
 
 def add_margin(pil_img, top, right, bottom, left, color):
@@ -22,14 +23,14 @@ def get_center(x, y, w, h):
 
 def get_font_by_size_searching(draw, text, _min, _max, width, height):
     for size in range(_min, _max + 2):
-        font = ImageFont.truetype("fonts/NotoSansCJK-Regular.ttc", size, encoding="unic")
+        font = ImageFont.truetype(cfg.FONT_PATH, size, encoding="unic")
         w, h = draw.textsize(text, font=font)
         if w > width or h > height:
             break
     if size == _min:
         return None
 
-    font = ImageFont.truetype("fonts/NotoSansCJK-Regular.ttc", size - 1, encoding="unic")
+    font = ImageFont.truetype(cfg.FONT_PATH, size - 1, encoding="unic")
     return font
 
 
@@ -51,9 +52,13 @@ class BaseCaption(object):
         self.text_y_w, self.text_y_b = .5, 0
         self.text_spacing = 0
 
-    def get_image(self, arg, message):
-        return Image.new("RGBA", (100, 100), "black")
-        draw.text()
+    def get_text(self, args, message):
+        if len(args) >= 1:
+            return args[0].replace("\\n", "\n"), None
+        return None, "Argument Error"
+
+    def get_image(self, args, message):
+        return Image.new("RGBA", (100, 100), "black"), None
 
     def add_margin(self, img):
         W, H = img.size
@@ -109,19 +114,23 @@ class BaseCaption(object):
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
-            if len(args) >= 1:
-                text = args[0].replace("\\n", "\n")
-                img = self.get_image(args[0], message)
-                img = self.add_margin(img)
-                draw = ImageDraw.Draw(img)
+            text, err1 = self.get_text(args, message)
+            img, err2 = self.get_image(args, message)
 
-                font, error_message = self.get_font(img, draw, text)
-                if error_message:
-                    await message.channel.send(error_message)
-                    return True
+            if err1 or err2:
+                await message.channel.send(err1 if err1 else err2)
+                return True
 
-                self.set_font(img, draw, text, font)
-                await self.send_image(img, message.channel)
+            img = self.add_margin(img)
+            draw = ImageDraw.Draw(img)
+
+            font, err3 = self.get_font(img, draw, text)
+            if err3:
+                await message.channel.send(err3)
+                return True
+
+            self.set_font(img, draw, text, font)
+            await self.send_image(img, message.channel)
             return True
         return False
 
