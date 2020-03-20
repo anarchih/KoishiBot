@@ -12,6 +12,7 @@ from koishi_cmd import *
 from mixed_app import *
 from game import TestGame
 from caption_generator import BaseCaption
+from keyword_reply import KeywordReply
 
 class Koishi(object):
     def __init__(self, client):
@@ -27,7 +28,8 @@ class Koishi(object):
             KoishiLaugh(),
             KoishiReactionEcho(),
 
-            # BaseCaption(),
+            # BaseCaption(cmd_keys=["test"]),
+            KeywordReply(keywords_path="keywords.pickle", min_time_gap=1, prob=0.5),
             KoishiSimpleCaption(),
             TestGame(),
             Choose(),
