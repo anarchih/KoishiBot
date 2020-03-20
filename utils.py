@@ -33,17 +33,18 @@ async def on_command(message, agent):
         content = content[len(cfg.CMD_PREFIX):]
         cmd_list = shlex.split(content)
     except ValueError:
-        return None
+        return False
 
     if len(cmd_list) == 0:
-        return None
+        return False
 
     cmd0 = cmd_list[0].lower()
 
     for app in agent.event_dict["on_command"]:
         if await app.on_command(cmd0, cmd_list[1:], message):
-            return
+            return True
     await message.channel.send("Incorrect Command!")
+    return False
 
 def to_emoji(content, client):
     emojis = client.emojis

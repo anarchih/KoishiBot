@@ -66,11 +66,15 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-    if message.content.lower().startswith(cfg.CMD_PREFIX):
-        await utils.on_command(message, koishi)
 
-    for app in koishi.event_dict['on_message']:
-        await app.on_message(message)
+    is_command = False
+    if message.content.lower().startswith(cfg.CMD_PREFIX):
+        is_command = await utils.on_command(message, koishi)
+
+    # on_message will be triggered if no command is executed.
+    if not is_command:
+        for app in koishi.event_dict['on_message']:
+            await app.on_message(message)
 
 @client.event
 async def on_reaction_add(reaction, user):
