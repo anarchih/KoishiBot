@@ -1,6 +1,7 @@
 *.pickle
 *.png
 __pycache__
+fonts/
 
 test_*.py
 discord_token.py
