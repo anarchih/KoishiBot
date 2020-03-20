@@ -71,10 +71,8 @@ async def on_message(message):
 
     is_command = False
     if message.content.lower().startswith(cfg.CMD_PREFIX):
-        is_command = await utils.on_command(message, koishi)
-
-    # on_message will be triggered if no command is executed.
-    if not is_command:
+        await utils.on_command(message, koishi)
+    else:
         for app in koishi.event_dict['on_message']:
             await app.on_message(message)
 
