@@ -33,6 +33,7 @@ class Koishi(object):
             KoishiSimpleCaption(),
             TestGame(),
             Choose(),
+            MahjongEmojiDisplay(),
             FileManager(link_dict_path="link_dict.pickle")
         ]
 
