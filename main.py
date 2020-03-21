@@ -29,7 +29,7 @@ class Koishi(object):
             KoishiReactionEcho(),
 
             # BaseCaption(cmd_keys=["test"]),
-            KeywordReply(keywords_path="keywords.pickle", min_time_gap=1, prob=0.5),
+            KeywordReply(keywords_path="keywords.pickle", min_time_gap=60*10, recover_time=60*60*2),
             KoishiSimpleCaption(),
             TestGame(),
             Choose(),
