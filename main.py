@@ -13,6 +13,7 @@ from mixed_app import *
 from game import TestGame
 from caption_generator import BaseCaption
 from keyword_reply import KeywordReply
+from server_cmd import cli
 
 class Koishi(object):
     def __init__(self, client):
@@ -94,6 +95,6 @@ async def on_reaction_remove(reaction, user):
         await app.on_reaction(reaction, user)
 
 
-client.loop.create_task(utils.cli(client, default_channel_id=483590049263517696))
+client.loop.create_task(cli(client, default_channel_id=483590049263517696))
 client.run(token.KOISHI)
 
