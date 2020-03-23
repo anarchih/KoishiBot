@@ -15,8 +15,8 @@ class KeywordReply(object):
         self.prob = 1
         self.max_size = 30
         self.min_keyword_size = 6
-        self.max_keyword_size = 30
-        self.max_response_size = 100
+        self.max_keyword_size = 100
+        self.max_response_size = 200
         self.last_triggered_time = 0
         self.last_recover_time = 0
         self.command_lock = False
