@@ -73,6 +73,8 @@ class StatEmoji(object):
         after_date = after_date.replace(tzinfo=None)
         try:
             messages = await channel.history(after=after_date, limit=None).flatten()
+            messages = [m for m in messages if not m.author.bot]
+            print(len(messages))
         except discord.errors.Forbidden:
             messages = []
 
