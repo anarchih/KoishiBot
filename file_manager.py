@@ -31,6 +31,8 @@ class FileManager(object):
             self.rename_keywords
         ], [])
 
+        self.max_name_size = 100
+
         if not os.path.exists(self.link_dict_path):
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump({}, f)
@@ -39,7 +41,7 @@ class FileManager(object):
         self.list_page = None
         self.list_regex = ""
         self.page_size = 20
-        self.reaction_list = ["⬅️", "➡️"]
+        self.page_reaction_list = ["⬅️", "➡️"]
         self.display_list = []
 
 
@@ -118,9 +120,14 @@ class FileManager(object):
             if send_error:
                 await channel.send("Failed to Save: Do not use the keywords.")
             return False
-        elif len(name) > 100:
+        elif len(name) > self.max_name_size:
             if send_error:
-                await channel.send("Failed to Save: length of {} should not be > 100".format(name))
+                await channel.send(
+                    "Failed to Save: length of {} should not be > {}".format(
+                        name,
+                        self.max_name_size
+                    )
+                )
             return False
         return True
 
@@ -189,7 +196,7 @@ class FileManager(object):
         if not list_message:
             return
 
-        for reaction in self.reaction_list:
+        for reaction in self.page_reaction_list:
             await list_message.add_reaction(reaction)
 
         self.display_list = display_list
@@ -201,9 +208,9 @@ class FileManager(object):
             await self.change_list_page(reaction.emoji)
 
     async def change_list_page(self, reaction):
-        if reaction == self.reaction_list[0]:
+        if reaction == self.page_reaction_list[0]:
             self.list_page -= 1
-        elif reaction == self.reaction_list[1]:
+        elif reaction == self.page_reaction_list[1]:
             self.list_page += 1
         else:
             return
