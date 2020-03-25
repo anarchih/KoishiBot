@@ -11,33 +11,48 @@ import math
 
 
 class StatEmoji(object):
-    def __init__(self, cmd_keys=["stat"]):
+    def __init__(self, how_long, cmd_keys=["stat"]):
         self.cmd_keys = cmd_keys
-        self.emoji_dict = {}
-        self.timestamp = None
+
+        self.reset_cache()
+
         self.loading_flag = False
-        self.how_long = 7 * 4
+        self.last_execute_time = 1e999
+        self.reset_cache_interval = 20 * 60
+        self.how_long = how_long
+
+    def reset_cache(self):
+        self.emoji_dict = {}
+        self.messages = []
+        self.timestamp = None
+        self.current_guild = None
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             args[0] = args[0].lower()
             if self.loading_flag:
-                await message.channel.send("Don't use stat command while loading")
+                await message.channel.send("Don't use stat command while collecting")
 
-            elif len(args) == 1 and args[0] == "load":
+            elif len(args) == 1 and args[0] == "collect":
                 self.loading_flag = True
-                await message.channel.send("Start Loading")
+                await message.channel.send("Start collecting")
+                self.reset_cache()
                 channels = message.channel.guild.channels
                 self.timestamp = time.time()
                 done, _ = await asyncio.wait(
-                    [self.stat_channel(ch) for ch in channels if ch.type == discord.ChannelType.text]
+                    [self.collect_channel(ch) for ch in channels if ch.type == discord.ChannelType.text]
                 )
-                list_of_dict = [f.result() for f in done]
-                self.emoji_dict = self.combine_dict(list_of_dict)
+                self.messages = sum([f.result() for f in done], [])
                 await message.channel.send("Finished")
+                self.current_guild = message.channel.guild
                 self.loading_flag = False
-            elif len(args) == 1 and args[0] == "count_all":
-                if self.emoji_dict:
+
+            elif self.current_guild != message.channel.guild:
+                await message.channel.send("Please collect data first")
+
+            elif len(args) == 1 and args[0] == "count_emoji":
+                if self.messages:
+                    emoji_dict = self.count_all_emojis()
                     emoji_len_list = [(k, len(v)) for k, v in self.emoji_dict.items()]
                     emoji_len_list.sort(key=lambda x: x[1], reverse=True)
                     iter_num = math.ceil(len(emoji_len_list) / 30)
@@ -47,8 +62,8 @@ class StatEmoji(object):
                         await message.channel.send(s)
                         emoji_len_list = emoji_len_list[30:]
             elif len(args) == 2 and args[0] == "hist":
-                if self.emoji_dict and args[1] in self.emoji_dict:
-                    timestamps = [m.created_at.timestamp() for m in self.emoji_dict[args[1]]]
+                if self.messages and args[1]:
+                    timestamps = [m.created_at.timestamp() for m in self.messages if args[1] in m.content]
                     mpl_data = mdates.epoch2num(timestamps)
                     fig, ax = plt.subplots(1, 1)
                     min_date = mdates.epoch2num(self.timestamp - self.how_long * 24 * 60 * 60)
@@ -56,33 +71,49 @@ class StatEmoji(object):
                     ax.hist(mpl_data, bins=self.how_long, range = (min_date, max_date), color='lightblue')
                     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-
+                    plt.xticks(rotation=45)
                     buf = io.BytesIO()
                     plt.savefig(buf, format='png')
                     buf.seek(0)
                     d_file = discord.File(filename="unknown.png", fp=buf)
                     await message.channel.send(file=d_file)
+            elif len(args) == 1 and args[0] == "count_msg":
+                if self.messages:
+                    l = len([msg for msg in self.messages if msg.channel == message.channel])
+                    await message.channel.send(content=str(l))
 
+
+
+            self.last_execute_time = time.time()
             return True
         return False
 
-    async def stat_channel(self, channel):
+    def count_all_emojis(self):
+        if self.emoji_dict:
+            return self.emoji_dict
+        emoji_dict = {}
+        emojis = self.messages[0].channel.guild.emojis
+        for emoji in emojis:
+            str_emoji = (("<a" if emoji.animated else "<") + ":%s:%d>") % (emoji.name, emoji.id)
+            emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
+            # [msg.created_at for msg in message if str_emoji in msg.reactions]
+        self.emoji_dict = emoji_dict
+        return emoji_dict
+
+    async def collect_channel(self, channel):
         emojis = channel.guild.emojis
         emoji_dict = {}
         after_date = datetime.datetime.now().astimezone(pytz.utc) - datetime.timedelta(days=self.how_long)
         after_date = after_date.replace(tzinfo=None)
+
         try:
             messages = await channel.history(after=after_date, limit=None).flatten()
             messages = [m for m in messages if not m.author.bot]
-            print(len(messages))
+            print(channel, len(messages))
         except discord.errors.Forbidden:
             messages = []
+        return messages
 
-        for emoji in emojis:
-            str_emoji = (("<a" if emoji.animated else "<") + ":%s:%d>") % (emoji.name, emoji.id)
-            emoji_dict[str_emoji] = [msg for msg in messages if str_emoji in msg.content]
-            # [msg.created_at for msg in message if str_emoji in msg.reactions]
-        return emoji_dict
 
     def combine_dict(self, list_of_dict):
         new_dict = {}
@@ -92,3 +123,8 @@ class StatEmoji(object):
             new_dict[emoji] = sum([d[emoji] for d in list_of_dict], [])
             new_dict[emoji].sort(key=lambda x: x.created_at)
         return new_dict
+
+    async def on_time(self, client):
+        if time.time() - self.last_execute_time > self.reset_cache_interval:
+            self.last_execute_time = 1e999
+            self.reset_cache()

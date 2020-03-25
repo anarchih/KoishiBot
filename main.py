@@ -14,6 +14,7 @@ from game import TestGame
 from caption_generator import BaseCaption
 from keyword_reply import KeywordReply
 from server_cmd import cli
+from stat_cmd import StatEmoji
 
 class Koishi(object):
     def __init__(self, client):
@@ -34,6 +35,7 @@ class Koishi(object):
             KoishiSimpleCaption(),
             TestGame(),
             Choose(),
+            StatEmoji(how_long=7 * 4),
             MahjongEmojiDisplay(),
             FileManager(link_dict_path="link_dict.pickle")
         ]
@@ -47,6 +49,7 @@ class Koishi(object):
             "on_reaction": [],
             "on_message": [],
             "on_ready": [],
+            "on_time": [],
         }
         for event_name, event_list in self.event_dict.items():
             for app in self.applications:
@@ -94,7 +97,17 @@ async def on_reaction_remove(reaction, user):
     for app in koishi.event_dict['on_reaction']:
         await app.on_reaction(reaction, user)
 
+async def on_time(client):
+    sleep_time = 10
+    while True:
+        start_time = time.time()
+        for app in koishi.event_dict['on_time']:
+            await app.on_time(client)
+        sleep_time = 10 - (time.time() - start_time)
+        await asyncio.sleep(sleep_time)
 
+
+client.loop.create_task(on_time(client))
 client.loop.create_task(cli(client, default_channel_id=483590049263517696))
 client.run(token.KOISHI)
 
