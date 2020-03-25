@@ -10,6 +10,12 @@ import pickle
 import math
 import re
 import asyncio
+class ListMessageItem(object):
+    def __init__(self, message, display, page, time):
+        self.message = message
+        self.display = display
+        self.page = page
+        self.time = time
 
 
 class FileManager(object):
@@ -37,12 +43,10 @@ class FileManager(object):
             with open(self.link_dict_path, "wb") as f:
                 pickle.dump({}, f)
 
-        self.list_message = None
-        self.list_page = None
-        self.list_regex = ""
+        self.list_dict = {}
+        self.max_list_num = 10
         self.page_size = 20
         self.page_reaction_list = ["⬅️", "➡️"]
-        self.display_list = []
 
 
     def add_name_list(self, name):
@@ -169,14 +173,14 @@ class FileManager(object):
             print(e)
             await channel.send("Failed to Save: Unknown Error")
 
-    async def show_list(self, display_list, channel=None):
+    async def show_list(self, display_list, message=None, channel=None):
         display_list += [""] * (self.page_size - len(display_list))
         s = "Existing Files:\n- "
         s += "\n- ".join(display_list)
         if channel:
             return await channel.send(content=s)
-        elif self.list_message:
-            return await self.list_message.edit(content=s)
+        elif message:
+            return await message.edit(content=s)
         else:
             return None
 
@@ -184,14 +188,11 @@ class FileManager(object):
         with open(self.link_dict_path, "rb") as f:
             display_list = list(pickle.load(f))
         if regex:
-            self.list_regex = regex
             display_list = [name for name in display_list if re.search(regex, name)]
-        else:
-            self.list_regex = ""
 
         display_list.sort()
 
-        list_message = await self.show_list(display_list[:self.page_size], channel)
+        list_message = await self.show_list(display_list[:self.page_size], None, channel)
 
         if not list_message:
             return
@@ -199,34 +200,42 @@ class FileManager(object):
         for reaction in self.page_reaction_list:
             await list_message.add_reaction(reaction)
 
-        self.display_list = display_list
-        self.list_page = 0
-        self.list_message = list_message
+        if len(self.list_dict) >= self.max_list_num:
+            min_item = min(self.list_dict.values(), key=lambda x: x.time)
+            del self.list_dict[min_item.message.id]
+
+        self.list_dict[list_message.id] = ListMessageItem(list_message, display_list, 0, time.time())
+
 
     async def on_reaction(self, reaction, user):
-        if self.list_message and reaction.message.id == self.list_message.id:
-            await self.change_list_page(reaction.emoji)
+        msg_id = reaction.message.id
+        if msg_id in self.list_dict:
+            await self.change_list_page(reaction)
+        if msg_id in self.question_dict:
+            await self.replace_message(reaction)
 
     async def change_list_page(self, reaction):
-        if reaction == self.page_reaction_list[0]:
-            self.list_page -= 1
-        elif reaction == self.page_reaction_list[1]:
-            self.list_page += 1
+        emoji, message = reaction.emoji, reaction.message
+        list_item = self.list_dict[message.id]
+        if emoji == self.page_reaction_list[0]:
+            list_item.page -= 1
+        elif emoji == self.page_reaction_list[1]:
+            list_item.page += 1
         else:
             return
 
-        display_list = self.display_list
+        display_list = list_item.display
         total_pages = math.ceil(len(display_list) / self.page_size)
         try:
-            self.list_page %= total_pages
+            list_item.page %= total_pages
         except:
             return
 
         #
-        start = self.list_page * self.page_size
+        start = list_item.page * self.page_size
         end = start + self.page_size
         display_list = display_list[start: end]
-        await self.show_list(display_list)
+        await self.show_list(display_list, message)
 
     async def delete(self, name, channel):
         name = name.lower()
