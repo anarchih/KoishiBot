@@ -126,7 +126,6 @@ class KeywordReply(object):
             self.last_recover_time += times * self.recover_time
             self.prob = min(self.prob, 1)
 
-        print(self.prob)
         if self.prob < random.random():
             return
         content = message.content
