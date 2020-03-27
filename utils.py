@@ -43,3 +43,28 @@ async def on_command(message, agent):
     await message.channel.send("Incorrect Command!")
     return False
 
+
+def get_user_by_name(name, guild):
+    members = guild.members
+    # Check Mention
+    try:
+        _id = int(re.findall("<@!([0-9]+)>", name)[0])
+        for m in members:
+            if m.id == _id:
+                return m
+        return None
+    except Exception as e:
+        pass
+
+    # Check Nick
+    for m in members:
+        if m.nick == name:
+            return m
+
+    # Check Name
+    for m in members:
+        if m.name == name:
+            return m
+
+    return None
+
