@@ -10,11 +10,21 @@ import pickle
 import math
 import re
 import asyncio
+import fuzzysearch
+
+
 class ListMessageItem(object):
     def __init__(self, message, display, page, time):
         self.message = message
         self.display = display
         self.page = page
+        self.time = time
+
+
+class QuestionMessageItem(object):
+    def __init__(self, message, candidates, time):
+        self.message = message
+        self.candidates = candidates
         self.time = time
 
 
@@ -48,6 +58,9 @@ class FileManager(object):
         self.page_size = 20
         self.page_reaction_list = ["⬅️", "➡️"]
 
+        self.question_dict = {}
+        self.max_question_num = 20
+        self.question_reaction_list = ["0️⃣","1️⃣","2️⃣", "3️⃣", "4️⃣"]
 
     def add_name_list(self, name):
         if name < self.name_list[0]:
@@ -275,7 +288,8 @@ class FileManager(object):
                 else:
                     await channel.send("Link is lost")
         else:
-            await channel.send("Failed: {} is not in the list".format(name))
+            # await channel.send("Failed: {} is not in the list".format(name))
+            await self.fuzzy_show(name, link_dict, channel)
 
     async def show_author(self, name, channel):
         with open(self.link_dict_path, "rb") as f:
@@ -303,4 +317,51 @@ class FileManager(object):
             pickle.dump(link_dict, f)
         await channel.send("Successfully Renamed")
 
+    async def fuzzy_show(self, name, link_dict, channel):
+        if len(name) <= 1 or len(name) > self.max_name_size:
+            await channel.send("Failed: %s is not in the list" % (name))
+            return
+        candidates = []
+        for key in link_dict:
+            if len(key) < len(name):
+                lst = fuzzysearch.find_near_matches(key, name, max_l_dist=1)
+            else:
+                lst = fuzzysearch.find_near_matches(name, key, max_l_dist=1)
 
+            if len(lst) and len(key) != 1:
+                candidates.append(key)
+        candidate_size = min(len(candidates), len(self.question_reaction_list))
+        question_candidates = random.sample(candidates, candidate_size)
+        if candidate_size == 0:
+            await channel.send("Failed: %s is not in the list" % (name))
+            return
+        s = "Which do you mean?\n"
+        s += "\n".join([str(i) + " " + key for i, key in enumerate(question_candidates)])
+        question_message = await channel.send(s)
+        for i in range(len(question_candidates)):
+            await question_message.add_reaction(self.question_reaction_list[i])
+
+        if len(self.question_dict) >= self.max_question_num:
+            min_item = min(self.question_dict.values(), key=lambda x: x.time)
+            del self.question_dict[min_item.message.id]
+
+        msg_id = question_message.id
+        self.question_dict[msg_id] = QuestionMessageItem(
+            message=question_message,
+            candidates=question_candidates,
+            time=time.time()
+        )
+
+    async def replace_message(self, reaction):
+        emoji, message = reaction.emoji, reaction.message
+        with open(self.link_dict_path, "rb") as f:
+            link_dict = pickle.load(f)
+        try:
+            question_item = self.question_dict[message.id]
+            idx = self.question_reaction_list.index(emoji)
+            name = question_item.candidates[idx]
+            url = "\n{}".format(link_dict[name][0])
+            await message.edit(content=url)
+            del self.question_dict[message.id]
+        except (ValueError, IndexError):
+            return
