@@ -8,6 +8,8 @@ from PIL import Image
 import io
 import time
 import math
+import utils
+import config as cfg
 
 
 class StatEmoji(object):
@@ -31,62 +33,64 @@ class StatEmoji(object):
         if cmd in self.cmd_keys:
             args[0] = args[0].lower()
             if self.loading_flag:
-                await message.channel.send("Don't use stat command while collecting")
+                await message.channel.send("Don't use stat command during collecting")
 
             elif len(args) == 1 and args[0] == "collect":
-                self.loading_flag = True
-                await message.channel.send("Start collecting")
-                self.reset_cache()
-                channels = message.channel.guild.channels
-                self.timestamp = time.time()
-                done, _ = await asyncio.wait(
-                    [self.collect_channel(ch) for ch in channels if ch.type == discord.ChannelType.text]
-                )
-                self.messages = sum([f.result() for f in done], [])
-                await message.channel.send("Finished")
-                self.current_guild = message.channel.guild
-                self.loading_flag = False
+                await self.run_collect(message)
 
             elif self.current_guild != message.channel.guild:
                 await message.channel.send("Please collect data first")
 
             elif len(args) == 1 and args[0] == "count_emoji":
-                if self.messages:
-                    emoji_dict = self.count_all_emojis()
-                    emoji_len_list = [(k, len(v)) for k, v in self.emoji_dict.items()]
-                    emoji_len_list.sort(key=lambda x: x[1], reverse=True)
-                    iter_num = math.ceil(len(emoji_len_list) / 30)
-                    emoji_len_list = ["%s: %d" % (k, v) for (k, v) in emoji_len_list]
-                    for i in range(iter_num):
-                        s = ", ".join(emoji_len_list[:30])
-                        await message.channel.send(s)
-                        emoji_len_list = emoji_len_list[30:]
-            elif len(args) == 2 and args[0] == "hist":
-                if self.messages and args[1]:
-                    timestamps = [m.created_at.timestamp() for m in self.messages if args[1] in m.content]
-                    mpl_data = mdates.epoch2num(timestamps)
-                    fig, ax = plt.subplots(1, 1)
-                    min_date = mdates.epoch2num(self.timestamp - self.how_long * 24 * 60 * 60)
-                    max_date = mdates.epoch2num(self.timestamp)
-                    ax.hist(mpl_data, bins=self.how_long, range = (min_date, max_date), color='lightblue')
-                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-                    plt.xticks(rotation=45)
-                    buf = io.BytesIO()
-                    plt.savefig(buf, format='png')
-                    buf.seek(0)
-                    d_file = discord.File(filename="unknown.png", fp=buf)
-                    await message.channel.send(file=d_file)
+                await self.run_count_emoji(message)
+
+            elif len(args) >= 2 and args[0] == "hist":
+                await self.run_hist(message, args)
+
             elif len(args) == 1 and args[0] == "count_msg":
                 if self.messages:
                     l = len([msg for msg in self.messages if msg.channel == message.channel])
                     await message.channel.send(content=str(l))
 
-
-
             self.last_execute_time = time.time()
             return True
         return False
+
+    async def run_hist(self, message, args):
+        if self.messages:
+            timestamps = [m.created_at.timestamp() for m in self.messages if args[1] in m.content]
+            mpl_data = mdates.epoch2num(timestamps)
+            fig, ax = plt.subplots(1, 1)
+            min_date = mdates.epoch2num(self.timestamp - self.how_long * 24 * 60 * 60)
+            max_date = mdates.epoch2num(self.timestamp)
+            ax.hist(
+                mpl_data,
+                bins=self.how_long,
+                range = (min_date, max_date),
+                color='lightblue'
+            )
+
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+            plt.xticks(rotation=45)
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            plt.close()
+            buf.seek(0)
+            d_file = discord.File(filename="unknown.png", fp=buf)
+            await message.channel.send(file=d_file)
+
+    async def run_count_emoji(self, message):
+        if self.messages:
+            emoji_dict = self.count_all_emojis()
+            emoji_len_list = [(k, len(v)) for k, v in self.emoji_dict.items()]
+            emoji_len_list.sort(key=lambda x: x[1], reverse=True)
+            iter_num = math.ceil(len(emoji_len_list) / 30)
+            emoji_len_list = ["%s: %d" % (k, v) for (k, v) in emoji_len_list]
+            for i in range(iter_num):
+                s = ", ".join(emoji_len_list[:30])
+                await message.channel.send(s)
+                emoji_len_list = emoji_len_list[30:]
 
     def count_all_emojis(self):
         if self.emoji_dict:
@@ -100,6 +104,20 @@ class StatEmoji(object):
         self.emoji_dict = emoji_dict
         return emoji_dict
 
+    async def run_collect(self, message):
+        self.loading_flag = True
+        await message.channel.send("Start collecting")
+        self.reset_cache()
+        channels = message.channel.guild.channels
+        self.timestamp = time.time()
+        done, _ = await asyncio.wait(
+            [self.collect_channel(ch) for ch in channels if ch.type == discord.ChannelType.text]
+        )
+        self.messages = sum([f.result() for f in done], [])
+        await message.channel.send("Finished")
+        self.current_guild = message.channel.guild
+        self.loading_flag = False
+
     async def collect_channel(self, channel):
         emojis = channel.guild.emojis
         emoji_dict = {}
@@ -108,12 +126,10 @@ class StatEmoji(object):
 
         try:
             messages = await channel.history(after=after_date, limit=None).flatten()
-            messages = [m for m in messages if not m.author.bot]
-            print(channel, len(messages))
+            messages = [m for m in messages if not m.author.bot and not m.content.startswith(cfg.CMD_PREFIX)]
         except discord.errors.Forbidden:
             messages = []
         return messages
-
 
     def combine_dict(self, list_of_dict):
         new_dict = {}
