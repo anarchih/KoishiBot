@@ -69,6 +69,14 @@ class StatEmoji(object):
                 range = (min_date, max_date),
                 color='lightblue'
             )
+            if len(args) == 3:
+                user = utils.get_user_by_name(args[2], message.channel.guild)
+                if user:
+                    a_timestamps = [
+                        m.created_at.timestamp() for m in self.messages if args[1] in m.content and m.author == user
+                    ]
+                    a_mpl_data = mdates.epoch2num(a_timestamps)
+                    ax.hist(a_mpl_data, bins=self.how_long, range = (min_date, max_date), color='lightcoral')
 
             ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
