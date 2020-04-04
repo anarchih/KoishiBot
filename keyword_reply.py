@@ -13,8 +13,8 @@ class KeywordReply(object):
         self.min_time_gap = min_time_gap
         self.recover_time = recover_time
         self.prob = 1
-        self.max_size = 30
-        self.min_keyword_size = 6
+        self.max_size = 100
+        self.min_keyword_size = 4
         self.max_keyword_size = 100
         self.max_response_size = 200
         self.last_triggered_time = 0
