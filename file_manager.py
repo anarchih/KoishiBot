@@ -318,17 +318,22 @@ class FileManager(object):
         await channel.send("Successfully Renamed")
 
     async def fuzzy_show(self, name, link_dict, channel):
-        if len(name) <= 1 or len(name) > self.max_name_size:
+        if len(name) <= 0 or len(name) > self.max_name_size:
             await channel.send("Failed: %s is not in the list" % (name))
             return
+
         candidates = []
         for key in link_dict:
-            if len(key) < len(name):
+            if len(key) == 1:
+                lst = fuzzysearch.find_near_matches(key, name, max_l_dist=0)
+            elif len(name) == 1:
+                lst = fuzzysearch.find_near_matches(name, key, max_l_dist=0)
+            elif len(key) < len(name):
                 lst = fuzzysearch.find_near_matches(key, name, max_l_dist=1)
             else:
                 lst = fuzzysearch.find_near_matches(name, key, max_l_dist=1)
 
-            if len(lst) and len(key) != 1:
+            if len(lst):
                 candidates.append(key)
         candidate_size = min(len(candidates), len(self.question_reaction_list))
         question_candidates = random.sample(candidates, candidate_size)
