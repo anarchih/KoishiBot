@@ -63,9 +63,17 @@ async def cli(client, default_channel_id):
                     messages = await channel.history(limit=20).flatten()
                     try:
                         num = int(cmd_list[-1])
-                        message = messages[num]
                     except:
                         print("Last Argument should be integer")
+                        continue
+                    if 0 <= num < 20:
+                        message = messages[num]
+                    else:
+                        try:
+                            message = await channel.fetch_message(num)
+                        except:
+                            print("Unable to get the message")
+                            continue
 
                     for cmd in cmd_list[1:-1]:
                         try:
