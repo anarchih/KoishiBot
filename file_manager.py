@@ -104,7 +104,7 @@ class FileManager(object):
             if len(sub_cmd_list) == 3:
                 await self.rename(sub_cmd_list[1].lower(), sub_cmd_list[2].lower(), message.channel)
         else:
-            await self.show(cmd, message.channel)
+            await self.show(cmd, sub_cmd_list[1:], message)
 
     def save_attachment_link(self, name, attachment, user):
         url, filename_ext = attachment.url, attachment.filename
@@ -267,9 +267,16 @@ class FileManager(object):
 
         await channel.send("Successfully Deleted")
 
-    async def show(self, name, channel):
+    async def show(self, name, args, message):
+        channel = message.channel
         with open(self.link_dict_path, "rb") as f:
             link_dict = pickle.load(f)
+
+        if len(args) >= 1 and args[0].lower() == "d":
+            try:
+                await message.delete()
+            except Exception as e:
+                print(e)
 
         name = name.lower()
         if name in link_dict:
@@ -370,3 +377,4 @@ class FileManager(object):
             del self.question_dict[message.id]
         except (ValueError, IndexError):
             return
+
