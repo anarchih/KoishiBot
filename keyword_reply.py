@@ -12,6 +12,12 @@ class KeywordReply(object):
         self.keywords_path = keywords_path
         self.min_time_gap = min_time_gap
         self.recover_time = recover_time
+
+        self.list_keywords = ["list", "ls", "l"]
+        self.save_keywords = ["save", "sv", "s"]
+        self.delete_keywords = ["delete", "del", "d"]
+        self.rename_keywords = ["rename", "rn"]
+
         self.prob = 1
         self.max_size = 100
         self.min_keyword_size = 4
@@ -31,13 +37,13 @@ class KeywordReply(object):
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             args[0] = args[0].lower()
-            if len(args) == 3 and args[0] == "save":
+            if len(args) == 3 and args[0] in self.save_keywords:
                 await self.save_keyword(args, message)
-            elif len(args) == 2 and args[0] == "delete":
+            elif len(args) == 2 and args[0] in self.delete_keywords:
                 await self.delete_keyword(args, message)
-            elif len(args) == 3 and args[0] == "rename":
+            elif len(args) == 3 and args[0] in self.rename_keywowrds:
                 await self.rename_keyword(args, message)
-            elif len(args) == 1 and args[0] == "list":
+            elif len(args) == 1 and args[0] in self.list_keywords:
                 await self.list_keyword(message)
 
             return True
