@@ -20,7 +20,7 @@ class StatEmoji(object):
 
         self.loading_flag = False
         self.last_execute_time = 1e999
-        self.reset_cache_interval = 20 * 60
+        self.reset_cache_interval = 30 * 60
         self.how_long = how_long
 
     def reset_cache(self):
@@ -90,27 +90,43 @@ class StatEmoji(object):
 
     async def run_count_emoji(self, message):
         if self.messages:
-            emoji_dict = self.count_all_emojis()
-            emoji_len_list = [(k, len(v)) for k, v in self.emoji_dict.items()]
-            emoji_len_list.sort(key=lambda x: x[1], reverse=True)
-            iter_num = math.ceil(len(emoji_len_list) / 30)
-            emoji_len_list = ["%s: %d" % (k, v) for (k, v) in emoji_len_list]
+            img_emoji_dict, gif_emoji_dict = self.count_all_emojis()
+            img_emoji_len_list = [(k, len(v)) for k, v in img_emoji_dict.items()]
+            gif_emoji_len_list = [(k, len(v)) for k, v in gif_emoji_dict.items()]
+
+            img_emoji_len_list.sort(key=lambda x: x[1], reverse=True)
+            gif_emoji_len_list.sort(key=lambda x: x[1], reverse=True)
+
+            iter_num = math.ceil(len(img_emoji_len_list) / 30)
+            emoji_len_list = ["%s: %d" % (k, v) for (k, v) in img_emoji_len_list]
             for i in range(iter_num):
-                s = ", ".join(emoji_len_list[:30])
+                s = "Image Emoji\n" if i == 0 else ""
+
+                s += ", ".join(emoji_len_list[:30])
+                await message.channel.send(s)
+                emoji_len_list = emoji_len_list[30:]
+
+            iter_num = math.ceil(len(gif_emoji_len_list) / 30)
+            emoji_len_list = ["%s: %d" % (k, v) for (k, v) in gif_emoji_len_list]
+            for i in range(iter_num):
+                s = "\nGIF Emoji\n" if i == 0 else ""
+                s += ", ".join(emoji_len_list[:30])
                 await message.channel.send(s)
                 emoji_len_list = emoji_len_list[30:]
 
     def count_all_emojis(self):
-        if self.emoji_dict:
-            return self.emoji_dict
-        emoji_dict = {}
+        img_emoji_dict = {}
+        gif_emoji_dict = {}
         emojis = self.messages[0].channel.guild.emojis
         for emoji in emojis:
-            str_emoji = (("<a" if emoji.animated else "<") + ":%s:%d>") % (emoji.name, emoji.id)
-            emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
+            if not emoji.animated:
+                str_emoji = "<:%s:%d>" % (emoji.name, emoji.id)
+                img_emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
+            else:
+                str_emoji = "<a:%s:%d>" % (emoji.name, emoji.id)
+                gif_emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
             # [msg.created_at for msg in message if str_emoji in msg.reactions]
-        self.emoji_dict = emoji_dict
-        return emoji_dict
+        return img_emoji_dict, gif_emoji_dict
 
     async def run_collect(self, message):
         self.loading_flag = True
