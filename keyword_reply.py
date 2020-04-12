@@ -41,7 +41,7 @@ class KeywordReply(object):
                 await self.save_keyword(args, message)
             elif len(args) == 2 and args[0] in self.delete_keywords:
                 await self.delete_keyword(args, message)
-            elif len(args) == 3 and args[0] in self.rename_keywowrds:
+            elif len(args) == 3 and args[0] in self.rename_keywords:
                 await self.rename_keyword(args, message)
             elif len(args) == 1 and args[0] in self.list_keywords:
                 await self.list_keyword(message)
