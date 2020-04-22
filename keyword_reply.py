@@ -76,6 +76,8 @@ class KeywordReply(object):
             await channel.send("Length of keyword is too long/short")
         elif len(response) > self.max_response_size:
             await channel.send("Length of response is too long")
+        elif len(message.mentions) > 0:
+            await channel.send("Don't mention anyone in keyword/response")
         else:
             self.keywords[key] = (response, 1, 0, str(author), author.id)
             self.save_to_file()
