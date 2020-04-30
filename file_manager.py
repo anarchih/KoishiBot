@@ -1,6 +1,6 @@
 import discord
 import time
-from utils import send_image, is_url
+from utils import send_image, is_url, delete_message
 import random
 import numpy as np
 import urllib
@@ -22,9 +22,10 @@ class ListMessageItem(object):
 
 
 class QuestionMessageItem(object):
-    def __init__(self, message, candidates, time):
+    def __init__(self, message, candidates, comment, time):
         self.message = message
         self.candidates = candidates
+        self.comment = comment
         self.time = time
 
 
@@ -269,20 +270,27 @@ class FileManager(object):
 
     async def show(self, name, args, message):
         channel = message.channel
+        comment = ""
         with open(self.link_dict_path, "rb") as f:
             link_dict = pickle.load(f)
 
-        if len(args) >= 1 and args[0].lower() == "d":
-            try:
-                await message.delete()
-            except Exception as e:
-                print(e)
+        i = 0
+        while True:
+            if i >= len(args):
+                break
+            arg = args[i].lower()
+            if arg == "c" and i + 1 < len(args):
+                comment = args[i + 1]
+                i += 1
+            elif arg == "d":
+                await delete_message(message)
+            i += 1
 
         name = name.lower()
         if name in link_dict:
             if link_dict[name][1] == "" and link_dict[name][2] == "":
-                url = "\n{}".format(link_dict[name][0])
-                await channel.send(url)
+                url = "{}".format(link_dict[name][0])
+                await channel.send(comment + "\n" + url)
             else:
                 opener = urllib.request.URLopener()
                 opener.addheader('User-Agent', 'whatever')
@@ -291,12 +299,12 @@ class FileManager(object):
                     import io
                     filename = link_dict[name][1] + link_dict[name][2]
                     d_file = discord.File(filename=filename, fp=io.BytesIO(res.file.fp.read()))
-                    await channel.send(file=d_file)
+                    await channel.send(content=comment, file=d_file)
                 else:
                     await channel.send("Link is lost")
         else:
             # await channel.send("Failed: {} is not in the list".format(name))
-            await self.fuzzy_show(name, link_dict, channel)
+            await self.fuzzy_show(name, comment, link_dict, channel)
 
     async def show_author(self, name, channel):
         with open(self.link_dict_path, "rb") as f:
@@ -324,7 +332,7 @@ class FileManager(object):
             pickle.dump(link_dict, f)
         await channel.send("Successfully Renamed")
 
-    async def fuzzy_show(self, name, link_dict, channel):
+    async def fuzzy_show(self, name, comment, link_dict, channel):
         if len(name) <= 0 or len(name) > self.max_name_size:
             await channel.send("Failed: %s is not in the list" % (name))
             return
@@ -361,6 +369,7 @@ class FileManager(object):
         self.question_dict[msg_id] = QuestionMessageItem(
             message=question_message,
             candidates=question_candidates,
+            comment=comment,
             time=time.time()
         )
 
@@ -372,8 +381,9 @@ class FileManager(object):
             question_item = self.question_dict[message.id]
             idx = self.question_reaction_list.index(emoji)
             name = question_item.candidates[idx]
-            url = "\n{}".format(link_dict[name][0])
-            await message.edit(content=url)
+            url = "{}".format(link_dict[name][0])
+            comment = question_item.comment
+            await message.edit(content=comment + "\n" + url)
             del self.question_dict[message.id]
         except (ValueError, IndexError):
             return
