@@ -44,10 +44,11 @@ async def cli(client, default_channel_id):
                 if len(cmd_list) == 1:
                     print("\n".join([str(i) + " " + g.name for i, g in enumerate(client.guilds)]))
                 elif len(cmd_list) == 2:
-                    guild = [g for g in client.guilds if g.name == cmd_list[1]]
-                    guild = guild[0] if len(guild) >= 1 else None
-                    channels = [c for c in guild.channels if isinstance(c, discord.TextChannel)]
-                    print("\n".join([str(i) + " " + c.guild.name + " " + c.name for i, c in enumerate(channels)]))
+                    guilds = [g for g in client.guilds if g.name == cmd_list[1]]
+                    if len(guilds) >= 1:
+                        guild = guilds[0]
+                        channels = [c for c in guild.channels if isinstance(c, discord.TextChannel)]
+                        print("\n".join([str(i) + " " + c.guild.name + " " + c.name for i, c in enumerate(channels)]))
                 elif len(cmd_list) == 3:
                     t_g, t_c = cmd_list[1], cmd_list[2]
                     channels = list(client.get_all_channels())
