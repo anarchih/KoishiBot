@@ -68,3 +68,9 @@ def get_user_by_name(name, guild):
 
     return None
 
+async def delete_message(message):
+    try:
+        await message.delete()
+        return True
+    except Exception as e:
+        return False
