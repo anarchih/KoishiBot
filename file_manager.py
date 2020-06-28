@@ -90,7 +90,9 @@ class FileManager(object):
                 await self._list(sub_cmd_list[1], message.channel)
 
         elif cmd in self.save_keywords:
-            if len(sub_cmd_list) == 2:
+            if len(message.mentions) > 0:
+                await message.channel.send("Don't mention anyone in file save command")
+            elif len(sub_cmd_list) == 2:
                 await self.save_file(sub_cmd_list[1].lower(), message)
             elif len(sub_cmd_list) == 3:
                 await self.save_url(sub_cmd_list[1].lower(), sub_cmd_list[2], message)
