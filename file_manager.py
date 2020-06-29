@@ -387,6 +387,9 @@ class FileManager(object):
             comment = question_item.comment
             await message.edit(content=comment + "\n" + url)
             del self.question_dict[message.id]
+
+            for emoji in self.question_reaction_list:
+                await message.clear_reaction(emoji)
         except (ValueError, IndexError):
             return
 
