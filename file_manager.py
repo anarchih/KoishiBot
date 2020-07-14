@@ -11,6 +11,7 @@ import math
 import re
 import asyncio
 import fuzzysearch
+import io
 
 
 class ListMessageItem(object):
@@ -298,7 +299,6 @@ class FileManager(object):
                 opener.addheader('User-Agent', 'whatever')
                 res = opener.open(link_dict[name][0])
                 if res.code == 200:
-                    import io
                     filename = link_dict[name][1] + link_dict[name][2]
                     d_file = discord.File(filename=filename, fp=io.BytesIO(res.file.fp.read()))
                     await channel.send(content=comment, file=d_file)
