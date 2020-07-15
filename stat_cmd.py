@@ -10,6 +10,9 @@ import time
 import math
 import utils
 import config as cfg
+import urllib
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import numpy as np
 
 
 class StatEmoji(object):
@@ -26,6 +29,7 @@ class StatEmoji(object):
     def reset_cache(self):
         self.emoji_dict = {}
         self.messages = []
+        self.emoji_image_dict = {}
         self.timestamp = None
         self.current_guild = None
 
@@ -46,6 +50,9 @@ class StatEmoji(object):
 
             elif len(args) >= 2 and args[0] == "hist":
                 await self.run_hist(message, args)
+
+            elif len(args) == 2 and args[0] == "pie":
+                await self.run_pie(message, args)
 
             elif len(args) == 1 and args[0] == "count_msg":
                 if self.messages:
@@ -114,18 +121,99 @@ class StatEmoji(object):
                 await message.channel.send(s)
                 emoji_len_list = emoji_len_list[30:]
 
-    def count_all_emojis(self):
+    def imscatter(self, x, y, image_bytes, ax=None, zoom=1):
+
+        if ax is None:
+            ax = plt.gca()
+        image = plt.imread(io.BytesIO(image_bytes))
+        im = OffsetImage(image, zoom=zoom)
+        x, y = np.atleast_1d(x, y)
+        artists = []
+        for x0, y0 in zip(x, y):
+            ab = AnnotationBbox(im, (x0, y0), xycoords='data', frameon=False)
+            artists.append(ax.add_artist(ab))
+        ax.update_datalim(np.column_stack([x, y]))
+        ax.autoscale()
+        return artists
+
+    def simplify_pie_data(self, labels, values, threshold=0.05):
+        sum_values = sum(values)
+        sum_other_values = sum(i for i in values if i / sum_values < threshold)
+        labels = [labels[i] for i in range(len(labels)) if values[i] / sum_values >= threshold]
+        values = [i for i in values if i / sum_values >= 0.05]
+        if sum_other_values > 0:
+            labels.append("Others")
+            values.append(sum_other_values)
+        return labels, values
+
+    def get_image_by_url(self, url):
+        opener = urllib.request.URLopener()
+        opener.addheader('User-Agent', 'whatever')
+        res = opener.open(url)
+        return res.file.fp.read()
+
+    def get_emoji_image_dict(self):
+        emojis = self.messages[0].channel.guild.emojis
+        emoji_image_dict = {}
+        for emoji in emojis:
+            str_emoji = "<:%s:%d>" % (emoji.name, emoji.id)
+            emoji_image_dict[str_emoji] = self.get_image_by_url(emoji.url)
+        return emoji_image_dict
+
+    async def run_pie(self, message, args):
+        user = utils.get_user_by_name(args[1], message.channel.guild)
+        if not user:
+            await message.channel.send("No Data.")
+            return
+
+        if self.messages:
+            img_emoji_dict, gif_emoji_dict = self.count_all_emojis(user)
+            img_emoji_len_list = [(k, len(v)) for k, v in img_emoji_dict.items()]
+            img_emoji_len_list.sort(key=lambda x: x[1], reverse=True)
+
+            labels, values = list(zip(*img_emoji_len_list))
+            sum_values = sum(values)
+            if sum_values == 0:
+                await message.channel.send("No Data.")
+                return
+            labels, values = self.simplify_pie_data(labels, values)
+
+            fig, ax = plt.subplots(1, 1)
+            count_labels = ["%.2f%%\n(%d)" % (v / sum_values * 100, v) for v in values]
+            texts = ax.pie(values, labels=labels, labeldistance=0.8, wedgeprops=dict(edgecolor='w'))[1]
+            ax.pie(values, labels=count_labels, labeldistance=1.2, wedgeprops=dict(edgecolor='w', alpha=0), textprops=dict(ha="center"))[1]
+
+            if not self.emoji_image_dict:
+                self.emoji_image_dict = self.get_emoji_image_dict()
+
+            for t, l in zip(texts, labels):
+                x, y = t.get_position()
+                if l in self.emoji_image_dict:
+                    t.set_alpha(0)
+                    self.imscatter([x], [y], self.emoji_image_dict[l], ax, 0.2)
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            plt.close()
+            buf.seek(0)
+            d_file = discord.File(filename="unknown.png", fp=buf)
+            await message.channel.send(file=d_file)
+
+
+
+
+    def count_all_emojis(self, user=None):
         img_emoji_dict = {}
         gif_emoji_dict = {}
         emojis = self.messages[0].channel.guild.emojis
         for emoji in emojis:
-            if not emoji.animated:
-                str_emoji = "<:%s:%d>" % (emoji.name, emoji.id)
-                img_emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
+            str_emoji = ("<a:%s:%d>" if emoji.animated else "<:%s:%d>") % (emoji.name, emoji.id)
+            emoji_dict = gif_emoji_dict if emoji.animated else img_emoji_dict
+            emoji_dict[str_emoji] = []
+            if not user:
+                emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
             else:
-                str_emoji = "<a:%s:%d>" % (emoji.name, emoji.id)
-                gif_emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content]
-            # [msg.created_at for msg in message if str_emoji in msg.reactions]
+                emoji_dict[str_emoji] = [msg for msg in self.messages if str_emoji in msg.content and user == msg.author]
         return img_emoji_dict, gif_emoji_dict
 
     async def run_collect(self, message):
