@@ -13,6 +13,7 @@ import config as cfg
 import urllib
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import numpy as np
+import aiohttp
 
 
 class StatEmoji(object):
@@ -146,18 +147,17 @@ class StatEmoji(object):
             values.append(sum_other_values)
         return labels, values
 
-    def get_image_by_url(self, url):
-        opener = urllib.request.URLopener()
-        opener.addheader('User-Agent', 'whatever')
-        res = opener.open(url)
-        return res.file.fp.read()
+    async def get_image_by_url(self, url):
+        async with aiohttp.ClientSession() as client:
+            async with client.get(str(url)) as res:
+                return await res.read()
 
-    def get_emoji_image_dict(self):
+    async def get_emoji_image_dict(self):
         emojis = self.messages[0].channel.guild.emojis
         emoji_image_dict = {}
         for emoji in emojis:
             str_emoji = "<:%s:%d>" % (emoji.name, emoji.id)
-            emoji_image_dict[str_emoji] = self.get_image_by_url(emoji.url)
+            emoji_image_dict[str_emoji] = await self.get_image_by_url(emoji.url)
         return emoji_image_dict
 
     async def run_pie(self, message, args):
@@ -184,7 +184,7 @@ class StatEmoji(object):
             ax.pie(values, labels=count_labels, labeldistance=1.2, wedgeprops=dict(edgecolor='w', alpha=0), textprops=dict(ha="center"))[1]
 
             if not self.emoji_image_dict:
-                self.emoji_image_dict = self.get_emoji_image_dict()
+                self.emoji_image_dict = await self.get_emoji_image_dict()
 
             for t, l in zip(texts, labels):
                 x, y = t.get_position()
