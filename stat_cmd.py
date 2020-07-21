@@ -154,10 +154,10 @@ class StatEmoji(object):
 
     async def get_emoji_image_dict(self):
         emojis = self.messages[0].channel.guild.emojis
-        emoji_image_dict = {}
-        for emoji in emojis:
-            str_emoji = "<:%s:%d>" % (emoji.name, emoji.id)
-            emoji_image_dict[str_emoji] = await self.get_image_by_url(emoji.url)
+        emoji_str_list = ["<:%s:%d>" % (e.name, e.id) for e in emojis]
+        emoji_image_list = await asyncio.gather(*[self.get_image_by_url(e.url) for e in emojis])
+        emoji_image_dict = {k: v for k, v in zip(emoji_str_list, emoji_image_list)}
+
         return emoji_image_dict
 
     async def run_pie(self, message, args):
