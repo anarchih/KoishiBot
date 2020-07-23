@@ -1,10 +1,13 @@
 import discord
 import random
 import pickle
+import datetime as dt
 from datetime import datetime
 import bisect
 import os
-
+import aiohttp
+import io
+import re
 
 class AlarmClockEvent(object):
     def __init__(self, minute, comments, channel_ids):
@@ -153,6 +156,52 @@ class DailyAlarmClock(object):
                 await channel.send(event.comments[0])
                 self.pointer_dict[guild_id] += 1
 
+
+class History(object):
+    def __init__(self, cmd_keys=["history"]):
+        self.cmd_keys = cmd_keys
+
+
+    async def on_command(self, cmd, args, message):
+        if cmd in self.cmd_keys:
+            channel = message.channel
+            if args:
+                target_channel = None
+                channels = channel.guild.channels
+                for c in channels:
+                    if args[0] == c.name and isinstance(c, discord.TextChannel):
+                        target_channel = c
+                        break
+                if not target_channel:
+                    await channel.send("Can't find the channel.")
+                    return True
+            else:
+                target_channel = channel
+
+            first_message = await target_channel.history(limit=1, oldest_first=True).flatten()
+            last_message = await target_channel.history(limit=1, oldest_first=False).flatten()
+
+            start_time = first_message[0].created_at
+            end_time = last_message[0].created_at
+            while True:
+                r = random.randrange(0, int((end_time - start_time).total_seconds()))
+                date = start_time + dt.timedelta(seconds=r)
+                msg_list = await target_channel.history(around=date).flatten()
+                if msg_list:
+                    msg = random.choice(msg_list)
+                    link = "https://discordapp.com/channels/%d/%d/%d\n" % (target_channel.guild.id, target_channel.id, msg.id)
+                    link += msg.author.display_name + " : \n"
+                    link += "> " + msg.content.replace("\n", "\n > ") + "\n"
+                    if not msg.embeds:
+                        await channel.send(link)
+                    else:
+                        await channel.send(link, embed=msg.embeds[0])
+                        for e in msg.embeds[1:]:
+                            await channel.send(embed=e)
+                    break
+            return True
+        else:
+            return False
 
 class Choose(object):
     def __init__(self, cmd_keys=["choose"]):
