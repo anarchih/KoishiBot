@@ -217,6 +217,30 @@ class Choose(object):
         else:
             return False
 
+class EmojiRaw(object):
+    def __init__(self, cmd_keys=["er"]):
+        self.cmd_keys = cmd_keys
+
+    async def on_command(self, cmd, args, message):
+        if cmd in self.cmd_keys:
+            if len(args) >= 1:
+                print(message.content)
+                emojis = re.findall(r"<:.+:([0-9]+)>", args[0])
+                if emojis:
+                    url = "https://cdn.discordapp.com/emojis/%s.png" % emojis[0]
+                    print(url)
+                    image = await self.get_image_by_url(url)
+                    buf = io.BytesIO(image)
+                    buf.seek(0)
+                    d_file = discord.File(filename="unknown.png", fp=buf)
+                    await message.channel.send(file=d_file)
+            return True
+        return False
+
+    async def get_image_by_url(self, url):
+        async with aiohttp.ClientSession() as client:
+            async with client.get(str(url)) as res:
+                return await res.read()
 
 class GuildReactionEcho(object):
     def __init__(self):
