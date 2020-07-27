@@ -147,15 +147,11 @@ class StatEmoji(object):
             values.append(sum_other_values)
         return labels, values
 
-    async def get_image_by_url(self, url):
-        async with aiohttp.ClientSession() as client:
-            async with client.get(str(url)) as res:
-                return await res.read()
 
     async def get_emoji_image_dict(self):
         emojis = self.messages[0].channel.guild.emojis
         emoji_str_list = ["<:%s:%d>" % (e.name, e.id) for e in emojis]
-        emoji_image_list = await asyncio.gather(*[self.get_image_by_url(e.url) for e in emojis])
+        emoji_image_list = await asyncio.gather(*[utils.get_data_by_url(e.url) for e in emojis])
         emoji_image_dict = {k: v for k, v in zip(emoji_str_list, emoji_image_list)}
 
         return emoji_image_dict

@@ -8,6 +8,8 @@ import os
 import aiohttp
 import io
 import re
+from utils import get_data_by_url
+
 
 class AlarmClockEvent(object):
     def __init__(self, minute, comments, channel_ids):
@@ -228,7 +230,7 @@ class EmojiRaw(object):
                 if emojis:
                     url = "https://cdn.discordapp.com/emojis/%s.png" % emojis[0]
                     print(url)
-                    image = await self.get_image_by_url(url)
+                    image = await get_data_by_url(url)
                     buf = io.BytesIO(image)
                     buf.seek(0)
                     d_file = discord.File(filename="unknown.png", fp=buf)
@@ -246,10 +248,6 @@ class EmojiRaw(object):
             return True
         return False
 
-    async def get_image_by_url(self, url):
-        async with aiohttp.ClientSession() as client:
-            async with client.get(str(url)) as res:
-                return await res.read()
 
 class GuildReactionEcho(object):
     def __init__(self):

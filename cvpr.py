@@ -10,7 +10,7 @@ import io
 import re
 from google.cloud import vision
 from google.cloud.vision import types
-from utils import get_image_by_url, is_url
+from utils import get_data_by_url, is_url
 import pickle
 import os
 import time
@@ -50,7 +50,7 @@ class ImageLabel(object):
                     await message.channel.send("Please input the image url or upload the image.")
                     return
 
-                data = await get_image_by_url(url)
+                data = await get_data_by_url(url)
                 try:
                     Image.open(io.BytesIO(data))
                 except OSError:

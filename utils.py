@@ -2,6 +2,7 @@ import discord
 import re
 import config as cfg
 import shlex
+import aiohttp
 
 
 is_url_regex = re.compile(
@@ -42,6 +43,12 @@ async def on_command(message, agent):
             return True
     await message.channel.send("Incorrect Command!")
     return False
+
+
+async def get_data_by_url(url):
+    async with aiohttp.ClientSession() as client:
+        async with client.get(str(url)) as res:
+            return await res.read()
 
 
 def get_user_by_name(name, guild):
