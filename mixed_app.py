@@ -224,7 +224,6 @@ class EmojiRaw(object):
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             if len(args) >= 1:
-                print(message.content)
                 emojis = re.findall(r"<:.+:([0-9]+)>", args[0])
                 if emojis:
                     url = "https://cdn.discordapp.com/emojis/%s.png" % emojis[0]
@@ -233,6 +232,16 @@ class EmojiRaw(object):
                     buf = io.BytesIO(image)
                     buf.seek(0)
                     d_file = discord.File(filename="unknown.png", fp=buf)
+                    await message.channel.send(file=d_file)
+
+                emojis = re.findall(r"<a:.+:([0-9]+)>", args[0])
+                if emojis:
+                    url = "https://cdn.discordapp.com/emojis/%s.gif" % emojis[0]
+                    print(url)
+                    image = await get_data_by_url(url)
+                    buf = io.BytesIO(image)
+                    buf.seek(0)
+                    d_file = discord.File(filename="unknown.gif", fp=buf)
                     await message.channel.send(file=d_file)
             return True
         return False
