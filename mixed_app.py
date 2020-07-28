@@ -163,7 +163,6 @@ class History(object):
     def __init__(self, cmd_keys=["history"]):
         self.cmd_keys = cmd_keys
 
-
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             channel = message.channel
@@ -192,6 +191,9 @@ class History(object):
                 if msg_list:
                     msg = random.choice(msg_list)
                     link = "https://discordapp.com/channels/%d/%d/%d\n" % (target_channel.guild.id, target_channel.id, msg.id)
+                    if msg.mentions:
+                        await channel.send(link)
+                        break
                     link += msg.author.display_name + " : \n"
                     link += "> " + msg.content.replace("\n", "\n > ") + "\n"
                     if not msg.embeds:
