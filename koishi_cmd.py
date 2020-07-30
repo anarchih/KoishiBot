@@ -36,6 +36,12 @@ class KoishiSimpleCaption(BaseCaption):
             "ya", "ridicule", "laugh",
             "excited", "displeased", "facepalm"
         ]
+        self.description = '\n'.join([
+            '- <text> [<emotion>]',
+            '  將標語 <text> 置入選定的表情圖片 <emotion> 中並顯示出來',
+            '  <emotion> 可使用的關鍵字: ' + ", ".join(self.image_list),
+            '  如未指定 <emotion> 會隨機使用其中一張表情圖片',
+        ])
 
     def get_image(self, args, message):
         try:
@@ -92,6 +98,9 @@ class KoishiStatus(object):
 class KoishiLaugh(object):
     def __init__(self, cmd_keys=["laugh"]):
         self.cmd_keys = cmd_keys
+        self.description = '\n'.join([
+            '傳送一張こいし的笑臉',
+        ])
 
 
     async def on_command(self, cmd, args, message):
@@ -125,6 +134,12 @@ class KoishiJyanken(object):
         }
         self.reversed_act_dict = {v: k for k, v in self.act_dict.items()}
         self.refused_time = 0
+        self.description = '\n'.join([
+            '猜拳遊戲',
+            '- <act>',
+            '  <act> 可使用的關鍵字: ' + ", ".join(self.act_dict.values()),
+            f'  若使用 {self.act_dict[3]} Bot 會拒絕玩猜拳一分鐘',
+        ])
 
 
     async def on_command(self, cmd, args, message):

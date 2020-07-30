@@ -27,6 +27,21 @@ class StatEmoji(object):
         self.reset_cache_interval = 30 * 60
         self.how_long = how_long
 
+        self.description = '\n'.join([
+            '統計並視覺化字詞/表符於此伺服器的使用頻率，需先使用 collect 指令收集資料後方可使用其他指令',
+            '- collect',
+            f'  收集近 {self.how_long} 天的所有訊息',
+            '',
+            '- count_emoji',
+            '  統計所有伺服器表符的使用次數',
+            '',
+            '- hist <text>/<emoji> [<user>]',
+            '  繪製 <text>/<emoji> 每日使用次數的直方圖，給定 <user> 會同時顯示 <user> 的每日使用次數',
+            '',
+            '- pie <user>',
+            '  繪製 <user> 使用伺服器表符的次數圓餅圖，<user> 可為 @(tag) 、 伺服器暱稱或帳號名稱',
+        ])
+
     def reset_cache(self):
         self.emoji_dict = {}
         self.messages = []

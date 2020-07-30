@@ -33,6 +33,17 @@ class Puzzle(object):
         self.game_message = None
         self.emoji_str_list = []
         self.idx_matrix = None
+        self.description = '\n'.join([
+            "N-puzzle 遊戲",
+            "- start ",
+            "  使用此指令需要上傳一張圖片，此指令會建立基於該圖片的 N-puzzle 遊戲",
+            "",
+            "- restart",
+            "  使用最後一次上傳的圖片重新開始遊戲",
+            "",
+            "- resume",
+            "  繼續遊戲",
+        ])
 
     def gen_n_puzzle(self, n):
         idx_matrix = np.arange(0, n ** 2).reshape(n, n)

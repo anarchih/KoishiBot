@@ -32,6 +32,12 @@ class ImageLabel(object):
             with open(self.usage_file_path, "wb") as f:
                 pickle.dump(self.usage, f)
 
+        self.description = '\n'.join([
+            "圖片類別偵測",
+            "- [<url>]",
+            "  對上傳的圖片或 <url> 中的圖片做類別偵測",
+        ])
+
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             cur_month = datetime.now(tz=timezone.utc).month

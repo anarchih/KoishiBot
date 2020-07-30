@@ -64,6 +64,31 @@ class FileManager(object):
         self.max_question_num = 20
         self.question_reaction_list = ["0️⃣","1️⃣","2️⃣", "3️⃣", "4️⃣"]
 
+        self.description = '\n'.join([
+            '檔案管理，可將網址或檔案上傳至 discord server 並透過關鍵字快速呼叫',
+            '- <keyword> [d] [c <comment>]',
+            '  呼叫 <keyword> 所對應的圖片或網址',
+            '  添加參數 d 可將下指令的訊息刪除',
+            '  添加參數 c <comment> 可讓 bot 在貼圖/網址時同時傳送 <comment>',
+            '',
+            '- ' + '/'.join(self.list_keywords),
+            '  列出目前所有的關鍵字',
+            '',
+            '- ' + '/'.join(self.rlist_keywords) + " <regexp>",
+            '  列出目前所有符合正規表示法 <regexp> 的關鍵字',
+            '',
+            '- ' + '/'.join(self.save_keywords) + " <keyword> [<url>]",
+            '  將 <url> 或上傳的圖片以 <keyword> 儲存，當 <keyword> 重複時，會直接覆蓋',
+            '',
+            '- ' + '/'.join(self.delete_keywords) + " <keyword>",
+            '  刪除 <keyword>',
+            '',
+            '- ' + '/'.join(self.author_keywords) + " <keyword>",
+            '  查詢 <keyword> 中的圖片/網址的上傳者',
+            '',
+            '- ' + '/'.join(self.rename_keywords) + " <keyword1> <keyword2>",
+            '  將 <keyword1> 重新命名成 <keyword2> ，上傳者不會更改',
+        ])
     def add_name_list(self, name):
         if name < self.name_list[0]:
             self.name_list.insert(0, name)

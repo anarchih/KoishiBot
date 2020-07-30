@@ -9,6 +9,14 @@ import discord
 class ImageProcessing(object):
     def __init__(self, cmd_keys=["image"]):
         self.cmd_keys = cmd_keys
+        self.description = '\n'.join([
+            '影像處理工具',
+            '- color_inverse',
+            '  對上傳的圖片做負片處理',
+            '',
+            '- channel_swap',
+            '  隨機置換上傳圖片的 RGB Channel',
+        ])
 
 
     async def on_command(self, cmd, args, message):

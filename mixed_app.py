@@ -162,23 +162,35 @@ class DailyAlarmClock(object):
 class History(object):
     def __init__(self, cmd_keys=["history"]):
         self.cmd_keys = cmd_keys
+        self.description = '\n'.join([
+            '- [<channel_name>]',
+            '  從 <channel_name> 或當前 channel 的歷史紀錄中隨機挑選一條訊息',
+        ])
+
+    def get_target_channel(self, args, channel):
+        if args:
+            target_channel = None
+            channels = channel.guild.channels
+            for c in channels:
+                if args[0] == c.name and isinstance(c, discord.TextChannel):
+                    target_channel = c
+                    break
+            if not target_channel:
+                return None
+        else:
+            target_channel = channel
+
+        return target_channel
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
             channel = message.channel
-            if args:
-                target_channel = None
-                channels = channel.guild.channels
-                for c in channels:
-                    if args[0] == c.name and isinstance(c, discord.TextChannel):
-                        target_channel = c
-                        break
-                if not target_channel:
-                    await channel.send("Can't find the channel.")
-                    return True
-            else:
-                target_channel = channel
+            target_channel = get_target_channel(args, channel)
+            if not target_channel:
+                await channel.send("Can't find the channel.")
+                return
 
+            target_time = get_target_time(args, target_channel)
             first_message = await target_channel.history(limit=1, oldest_first=True).flatten()
             last_message = await target_channel.history(limit=1, oldest_first=False).flatten()
 
@@ -210,6 +222,10 @@ class History(object):
 class Choose(object):
     def __init__(self, cmd_keys=["choose"]):
         self.cmd_keys = cmd_keys
+        self.description = '\n'.join([
+            '- <item1> [<item2> ...]',
+            '  從 <item1> ... <itemX> 中隨機選擇一個',
+        ])
 
 
     async def on_command(self, cmd, args, message):
@@ -224,6 +240,10 @@ class Choose(object):
 class EmojiRaw(object):
     def __init__(self, cmd_keys=["er"]):
         self.cmd_keys = cmd_keys
+        self.description = '\n'.join([
+            '- <custom_emoji>',
+            '  顯示 <custom_emoji> 的原圖',
+        ])
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
@@ -260,4 +280,28 @@ class GuildReactionEcho(object):
         for emoji in emojis:
             if str(emoji) in message.content:
                 await message.add_reaction(emoji)
+
+class Help(object):
+    def __init__(self, agent, cmd_keys=["help"]):
+        self.cmd_keys = cmd_keys
+        self.agent = agent
+        self.description = '\n'.join([
+            '說明文件',
+        ])
+
+    async def on_command(self, cmd, args, message):
+        if cmd in self.cmd_keys:
+            s = "指令型功能\n"
+            s += "```\n"
+            for app in self.agent.event_dict["on_command"]:
+                s += "=== " + "/".join(app.cmd_keys) + " ===\n"
+                try:
+                    s += "\t" + app.description.replace("\n", "\n\t") + "\n\n"
+                except:
+                    s += "\t" + "No Document\n\n"
+            s += "```"
+            await message.channel.send(s)
+            return True
+        else:
+            return False
 
