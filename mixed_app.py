@@ -281,26 +281,92 @@ class GuildReactionEcho(object):
             if str(emoji) in message.content:
                 await message.add_reaction(emoji)
 
+
+class EmojiArt(object):
+    def __init__(self, cmd_keys=["emoji_art"]):
+        self.cmd_keys = cmd_keys
+        self.nil_emoji_str = "<:nil:735852429391953920>"
+
+
+    def get_args_in_code_block(self, text):
+        cb_symbols = list(re.finditer("```", text))
+        if len(cb_symbols) < 2:
+            return []
+
+        start, end = cb_symbols[0].span()[1], cb_symbols[-1].span()[0]
+        return shlex.split(text[start: end])
+
+    def get_symbol_table(self, emojis, args):
+        emojis = random.sample(emojis, len(emojis))
+        z = {c: i for i, c in enumerate(set("".join(args)) - {"."})}
+        return (z, emojis) if len(z) <= len(emojis) else ({}, [])
+
+    async def on_command(self, cmd, args, message):
+        if cmd in self.cmd_keys:
+            for arg in args:
+                if "```" in arg:
+                    break
+
+            cb_args = self.get_args_in_code_block(message.content)
+            if not cb_args:
+                await message.channel.send("Unable to find the code block")
+                return True
+
+            symbol_table, emojis = self.get_symbol_table(message.channel.guild.emojis, cb_args)
+            if not symbol_table:
+                await message.channel.send("Too many symbols")
+                return True
+
+            s_list = []
+            for arg in cb_args:
+                s = ""
+                for i, c in enumerate(arg[::-1]):
+                    if c != ".":
+                        break
+                i = None if i == 0 else -i
+                for c in arg[:i]:
+                    if c == ".":
+                        s += self.nil_emoji_str
+                        continue
+                    emoji = emojis[symbol_table[c]]
+                    if emoji.animated:
+                        s += "<a:%s:%d>" % (emoji.name, emoji.id)
+                    else:
+                        s += "<:%s:%d>" % (emoji.name, emoji.id)
+                s_list.append(s)
+            try:
+                s = "\n".join(s_list)
+                if s:
+                    await message.channel.send(s)
+            except discord.errors.HTTPException:
+                await message.channel.send("String Length > 2000")
+
+            return True
+
+
 class Help(object):
     def __init__(self, agent, cmd_keys=["help"]):
         self.cmd_keys = cmd_keys
         self.agent = agent
         self.description = '\n'.join([
-            '說明文件',
+            '顯示說明文件',
         ])
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
-            s = "指令型功能\n"
-            s += "```\n"
+            # s = "指令型功能\n"
+            s = ""
             for app in self.agent.event_dict["on_command"]:
+                if args and args[0] not in app.cmd_keys:
+                    continue
+
                 s += "=== " + "/".join(app.cmd_keys) + " ===\n"
                 try:
                     s += "\t" + app.description.replace("\n", "\n\t") + "\n\n"
                 except:
                     s += "\t" + "No Document\n\n"
-            s += "```"
-            await message.channel.send(s)
+            if s:
+                await message.channel.send("```\n" + s + "```")
             return True
         else:
             return False
