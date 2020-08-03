@@ -15,6 +15,7 @@ import pickle
 import os
 import time
 from PIL import Image
+from googletrans import Translator
 
 
 class ImageLabel(object):
@@ -66,9 +67,12 @@ class ImageLabel(object):
                 image = types.Image(content=data)
                 response = self.client.label_detection(image=image)
                 labels = response.label_annotations
+                translator = Translator()
                 s = "\n"
                 for label in labels:
-                    s += "%s: %f\n" % (label.description, label.score)
+                    text = label.description
+                    t_text = translator.translate(text, dest="zh-tw").text
+                    s += "%s (%s): %f\n" % (text, t_text, label.score)
 
                 self.usage[1] += 1
                 with open(self.usage_file_path, "wb") as f:
