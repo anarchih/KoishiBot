@@ -349,7 +349,8 @@ class Help(object):
         self.cmd_keys = cmd_keys
         self.agent = agent
         self.description = '\n'.join([
-            '顯示說明文件',
+            '- [<command_name>]'
+            '  顯示全部指令或指令名為 <command_name> 的說明文件',
         ])
 
     async def on_command(self, cmd, args, message):
