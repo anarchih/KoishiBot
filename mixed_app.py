@@ -283,12 +283,38 @@ class GuildReactionEcho(object):
 
 
 class EmojiArt(object):
-    def __init__(self, cmd_keys=["emoji_art"]):
+    def __init__(self, path, cmd_keys=["emoji_art"]):
         self.cmd_keys = cmd_keys
+        self.emojiart_dict_path = path
         self.nil_emoji_str = "<:nil:735852429391953920>"
 
+        self.list_keywords = ["list", "ls", "l"]
+        self.save_keywords = ["save", "sv", "s"]
+        self.delete_keywords = ["delete", "del", "d"]
+        self.rename_keywords = ["rename", "rn"]
+        self.keywords = sum([
+            self.list_keywords,
+            self.save_keywords,
+            self.delete_keywords,
+            self.rename_keywords
+        ], [])
 
-    def get_args_in_code_block(self, text):
+    def load_emojiart_dict(self):
+        try:
+            with open(self.emojiart_dict_path, "rb") as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            with open(self.emojiart_dict_path, "wb") as f:
+                pickle.dump({}, f)
+                return {}
+
+
+    def save_emojiart_dict(self, emojiart_dict):
+        with open(self.emojiart_dict_path, "wb") as f:
+            pickle.dump(emojiart_dict, f)
+
+    def get_args_in_code_block(self, text, startsfrom=0):
+        text = text[startsfrom:]
         cb_symbols = list(re.finditer("```", text))
         if len(cb_symbols) < 2:
             return []
@@ -297,22 +323,97 @@ class EmojiArt(object):
         return shlex.split(text[start: end])
 
     def get_symbol_table(self, emojis, args):
-        emojis = random.sample(emojis, len(emojis))
-        z = {c: i for i, c in enumerate(set("".join(args)) - {"."})}
-        return (z, emojis) if len(z) <= len(emojis) else ({}, [])
+        symbol_set = set("".join(args)) - {"."}
+        if len(symbol_set) > len(emojis):
+            return {}
+
+        emojis = random.sample(emojis, len(symbol_set))
+        z = {}
+        for i, c in enumerate(symbol_set):
+            emoji_str = '<a:%s:%d>' if emojis[i].animated else '<:%s:%d>'
+            emoji_str = emoji_str % (emojis[i].name, emojis[i].id)
+            z[c] = emoji_str
+
+        return z
 
     async def on_command(self, cmd, args, message):
         if cmd in self.cmd_keys:
-            for arg in args:
-                if "```" in arg:
-                    break
+            if args:
+                if args[0] in self.save_keywords:
+                    await self.run_save(args, message)
+                elif args[0] in self.list_keywords:
+                    await self.run_list(args, message)
+                elif args[0] in self.delete_keywords:
+                    await self.run_delete(args, message)
+                elif args[0] in self.rename_keywords:
+                    await self.run_rename(args, message)
+                else:
+                    await self.run_display(args, message)
+            return True
+        return False
 
-            cb_args = self.get_args_in_code_block(message.content)
+    async def run_list(self, args, message):
+        emojiart_dict = self.load_emojiart_dict()
+        self.emojiart_list = [k for k in emojiart_dict.keys()]
+        s = "Existing Files:\n- "
+        s += "\n- ".join(self.emojiart_list[0:20])
+        await message.channel.send(s)
+        return True
+
+    async def run_delete(self, args, message):
+        if len(args) >= 2:
+            emojiart_dict = self.load_emojiart_dict()
+            if args[1] in emojiart_dict:
+                del emojiart_dict[args[1]]
+                self.save_emojiart_dict(emojiart_dict)
+                await message.channel.send("Successfully Deleted")
+                return True
+        await message.channel.send("Unable to find the keyword or arguments are not enough.")
+        return False
+
+    async def run_rename(self, args, message):
+        if len(args) >= 3:
+            emojiart_dict = self.load_emojiart_dict()
+            if args[1] in emojiart_dict:
+                emojiart_dict[args[2]] = emojiart_dict[args[1]]
+                del emojiart_dict[args[1]]
+                self.save_emojiart_dict(emojiart_dict)
+                await message.channel.send("Successfully Renamed")
+                return True
+        await message.channel.send("Unable to find the keyword or arguments are not enough.")
+        return False
+
+    async def run_save(self, args, message):
+        if len(args) >= 3:
+            if args[1] in self.keywords:
+                await message.channel.send("Failed to Save: Do not use the keywords.")
+                return False
+            if message.mentions:
+                await message.channel.send("Don't mention anyone in file save command")
+                return False
+
+            emojiart_dict = self.load_emojiart_dict()
+            idx = message.content.find(args[1])
+            text = message.content[idx + len(args[1]):]
+            if len(list(re.finditer("```", text))) >= 2:
+                emojiart_dict[args[1]] = text
+                self.save_emojiart_dict(emojiart_dict)
+                await message.channel.send("Successfully Saved")
+                return True
+
+        await message.channel.send("Illegal Arguments")
+        return False
+
+    async def run_display(self, args, message):
+        if len(args) >= 1:
+            emojiart_dict = self.load_emojiart_dict()
+            text = emojiart_dict[args[0]] if args[0] in emojiart_dict else message.content
+            cb_args = self.get_args_in_code_block(text)
             if not cb_args:
                 await message.channel.send("Unable to find the code block")
                 return True
 
-            symbol_table, emojis = self.get_symbol_table(message.channel.guild.emojis, cb_args)
+            symbol_table = self.get_symbol_table(message.channel.guild.emojis, cb_args)
             if not symbol_table:
                 await message.channel.send("Too many symbols")
                 return True
@@ -328,11 +429,8 @@ class EmojiArt(object):
                     if c == ".":
                         s += self.nil_emoji_str
                         continue
-                    emoji = emojis[symbol_table[c]]
-                    if emoji.animated:
-                        s += "<a:%s:%d>" % (emoji.name, emoji.id)
                     else:
-                        s += "<:%s:%d>" % (emoji.name, emoji.id)
+                        s += symbol_table[c]
                 s_list.append(s)
             try:
                 s = "\n".join(s_list)
@@ -341,7 +439,7 @@ class EmojiArt(object):
             except discord.errors.HTTPException:
                 await message.channel.send("String Length > 2000")
 
-            return True
+        return True
 
 
 class Help(object):
